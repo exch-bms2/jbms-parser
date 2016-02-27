@@ -110,7 +110,7 @@ public class BMSDecoder {
 		});
 		reserve.add(new CommandWord("LNOBJ") {
 			public void execute(BMSModel model, String arg) {
-				model.setLNObject(arg);
+				model.setLNObject(arg.toUpperCase());
 			}
 		});
 		reserve.add(new CommandWord("DIFFICULTY") {
@@ -200,6 +200,7 @@ public class BMSDecoder {
 					line = line.substring(1, line.length());
 					char c = line.charAt(0);
 					if ('0' <= c && c <= '9') {
+						line = line.toUpperCase();
 						// 楽譜
 						try {
 							int bar_index = Integer.parseInt(line.substring(0,
@@ -226,7 +227,7 @@ public class BMSDecoder {
 										"BMSファイルの解析中の例外:#BPM :" + arg);
 							}
 						} else {
-							String id = line.substring(3, 5);
+							String id = line.substring(3, 5).toUpperCase();
 							String bpm = line.substring(6, line.length());
 							try {
 								model.putBPM(id, Double.parseDouble(bpm));
@@ -239,16 +240,16 @@ public class BMSDecoder {
 						}
 					} else if (matchesReserveWord(line, "WAV")) {
 						// 音源ファイル
-						String id = line.substring(3, 5);
+						String id = line.substring(3, 5).toUpperCase();
 						String file_name = line.substring(6, line.length());
 						wavmap.put(id, file_name);
 					} else if (matchesReserveWord(line, "BMP")) {
 						// BGAファイル
-						String id = line.substring(3, 5);
+						String id = line.substring(3, 5).toUpperCase();
 						String file_name = line.substring(6, line.length());
 						bgamap.put(id, file_name);
 					} else if (matchesReserveWord(line, "STOP")) {
-						String id = line.substring(4, 6);
+						String id = line.substring(4, 6).toUpperCase();
 						String stop = line.substring(7, line.length());
 						try {
 							model.putStop(id, Double.parseDouble(stop) / 192);
