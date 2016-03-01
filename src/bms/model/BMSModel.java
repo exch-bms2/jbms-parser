@@ -461,7 +461,6 @@ public class BMSModel implements Comparable {
 
 	public int getLastTime() {
 		TimeLine[] times = getAllTimeLines();
-		Arrays.sort(times);
 
 		for (int i = times.length - 1; i > 0; i--) {
 			for (int lane = 0; lane < 18; lane++) {
