@@ -16,7 +16,6 @@ import org.apache.commons.io.IOUtils;
  */
 public class BMSDecoder {
 
-	// TODO bug:doppelgangerのような超高速BPMを瞬間的に使用している場合はBPM変化を検出できない
 	// TODO bug:RANDOM構文を厳密解釈する必要あり
 
 	private List<CommandWord> reserve = new ArrayList<CommandWord>();

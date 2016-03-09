@@ -13,7 +13,7 @@ import java.util.logging.Logger;
  * @author exch
  */
 public class Section {
-
+	
 	public static final int LANE_AUTOPLAY = 1;
 	public static final int SECTION_RATE = 2;
 	public static final int BPM_CHANGE = 3;
@@ -35,7 +35,7 @@ public class Section {
 	/**
 	 * 小節の拡大倍率
 	 */
-	private double rate = 1.0;
+	private float rate = 1.0f;
 	/**
 	 * ストップシーケンス
 	 */
@@ -101,7 +101,7 @@ public class Section {
 
 	private BMSModel model;
 
-	private int sectionnum;
+	private float sectionnum;
 
 	public Section(BMSModel model, Section prev, String[] lines) {
 		this.model = model;
@@ -112,7 +112,7 @@ public class Section {
 		}
 		this.prev = prev;
 		if (prev != null) {
-			sectionnum = prev.sectionnum + 1;
+			sectionnum = prev.sectionnum + prev.rate;
 		}
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
@@ -134,7 +134,7 @@ public class Section {
 			case SECTION_RATE:
 				int colon_index = line.indexOf(":");
 				line = line.substring(colon_index + 1, line.length());
-				rate = Double.valueOf(line);
+				rate = Float.valueOf(line);
 				break;
 			// BPM変化
 			case BPM_CHANGE:
@@ -339,6 +339,9 @@ public class Section {
 			// 最終BPM取得
 			double nowbpm = prev.getStartBPM();
 			for (int i = 0; i < prev.bpm_change.length; i++) {
+				if (prev.bpm_change[i] != 0.0) {
+					nowbpm = prev.bpm_change[i];
+				}
 				for (int j = 0; j < prev.stop.length; j++) {
 					if (((double) j / prev.stop.length >= (double) i
 							/ prev.bpm_change.length)
@@ -346,9 +349,6 @@ public class Section {
 									/ prev.bpm_change.length)) {
 						dt += prev.stop[j] * (1000 * 60 * 4 / nowbpm);
 					}
-				}
-				if (prev.bpm_change[i] != 0.0) {
-					nowbpm = prev.bpm_change[i];
 				}
 				dt += 1000 * 60 * 4 * prev.rate
 						* (1.0 / prev.bpm_change.length) / nowbpm;
@@ -502,7 +502,7 @@ public class Section {
 			double dt = 0.0;
 			for (int i = 0; i < s.length; i++) {
 				if (!s[i].equals("00")) {
-					TimeLine tl = model.getTimeLine(sectionnum + ((float) i) / s.length, base + (int) (dt * rate));
+					TimeLine tl = model.getTimeLine(sectionnum + (float)(rate *  i / s.length), base + (int) (dt * rate));
 					if (key >= 0 && key < 18) {
 						if (tl.existNote(key % 18)) {
 							Logger.getGlobal().warning(
@@ -635,9 +635,9 @@ public class Section {
 										* (st[k] - (double) i / s.length - se)
 										/ nowbpm;
 								se = st[k] - (double) i / s.length;
-								model.getTimeLine(sectionnum + st[k].floatValue(), base + (int) (dt * rate))
+								model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
 								.setBPM(nowbpm);
-								model.getTimeLine(sectionnum + st[k].floatValue(), base + (int) (dt * rate))
+								model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
 								.setStop((int) (stop.get(st[k])
 										* (1000 * 60 * 4 / nowbpm)));
 								// System.out
@@ -663,7 +663,7 @@ public class Section {
 						// base + (int) (dt * rate)).getBPM()
 						// + " → " + nowbpm);
 						// }
-						model.getTimeLine(sectionnum + bk[j].floatValue(), base + (int) (dt * rate)).setBPM(
+						model.getTimeLine(sectionnum + bk[j].floatValue() * rate, base + (int) (dt * rate)).setBPM(
 								nowbpm);
 						// Logger.getGlobal().info(
 						// "BPM変化:" + nowbpm + "  time:"
@@ -677,9 +677,9 @@ public class Section {
 						dt += 1000 * 60 * 4
 								* (st[k] - (double) i / s.length - se) / nowbpm;
 						se = st[k] - (double) i / s.length;
-						model.getTimeLine(sectionnum + st[k].floatValue(), base + (int) (dt * rate)).setBPM(
+						model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate)).setBPM(
 								nowbpm);
-						model.getTimeLine(sectionnum + st[k].floatValue(), base + (int) (dt * rate))
+						model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
 						.setStop((int) (stop.get(st[k])
 								* (1000 * 60 * 4 / nowbpm)));
 						// System.out.println("STOP : "
