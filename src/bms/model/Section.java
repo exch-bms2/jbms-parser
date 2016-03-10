@@ -605,7 +605,7 @@ public class Section {
 											+ (key + 1) + ":"
 											+ (base + (int) (dt * rate)));
 						}
-						tl.addNote(key % 18, new MineNote());
+						tl.addNote(key % 18, new MineNote(getId("00", wavmap), Integer.parseInt(s[i], 36)));
 						tl.setBPM(nowbpm);
 					}
 					if (key == 72) {
