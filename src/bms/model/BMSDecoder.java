@@ -17,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 public class BMSDecoder {
 
 	// TODO bug:RANDOM構文を厳密解釈する必要あり
+	// TODO 構文解析エラーログの取得
 
 	private List<CommandWord> reserve = new ArrayList<CommandWord>();
 
