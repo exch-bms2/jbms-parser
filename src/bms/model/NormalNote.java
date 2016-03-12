@@ -11,4 +11,10 @@ public class NormalNote extends Note {
 		this.setWav(wav);
 	}
 	
+	public NormalNote(int wav, int start, int duration) {
+		this.setWav(wav);
+		this.setStarttime(start);
+		this.setDuration(duration);
+	}
+	
 }

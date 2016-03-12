@@ -2,8 +2,9 @@ package bms.model.bmson;
 
 // BGA.
 public class BGA {
-	public BGAHeader[] bgaHeader;
-	public BNote[] bgaNotes; // as notes using this sound.
-	public BNote[] layerNotes; // as notes using this sound.
-	public BNote[] poorNotes; // as notes using this sound.
+	public BGAHeader[] bga_header;  // picture id and filename
+	public BNote[] bga_events; // as notes using this sound.
+	public BNote[] layer_events; // as notes using this sound.
+	public BNote[] poor_events; // as notes using this sound.
+	
 }

@@ -3,6 +3,7 @@ package bms.model;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 
 import bms.model.bmson.*;
 
@@ -24,6 +25,7 @@ public class BMSONDecoder {
 	}
 
 	public BMSModel decode(File f) {
+		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.getName());
 		BMSModel model = new BMSModel();
 		try {
 			ObjectMapper mapper = new ObjectMapper();
@@ -31,16 +33,16 @@ public class BMSONDecoder {
 			model.setTitle(bmson.info.title);
 			model.setArtist(bmson.info.artist);
 			model.setGenre(bmson.info.genre);
-			model.setJudgerank(bmson.info.judgeRank);
+			model.setJudgerank(bmson.info.judge_rank);
 			model.setTotal(bmson.info.total);
-			model.setBpm(bmson.info.initBPM);
+			model.setBpm(bmson.info.init_bpm);
 			model.setPlaylevel(String.valueOf(bmson.info.level));
 			model.setUseKeys(7);
 			model.setLntype(lntype);
 			double nowbpm = model.getBpm();
 			// TODO BPM変化に伴うTime算出
 			// bpmNotes処理
-			for (EventNote n : bmson.bpmNotes) {
+			for (EventNote n : bmson.bpm_events) {
 				model.getTimeLine(n.y / 960f,
 						(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * 960)))
 						.setBPM(n.v);
@@ -54,7 +56,7 @@ public class BMSONDecoder {
 				tl.setBPM(nowbpm);
 			}
 			// stopNotes処理
-			for (EventNote n : bmson.stopNotes) {
+			for (EventNote n : bmson.stop_events) {
 				TimeLine tl = model.getTimeLine(n.y / 960f,
 						(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * 960)));
 				tl.setStop((int) ((1000.0 * 60 * 4 * n.v) / (nowbpm * 960)));
@@ -63,15 +65,24 @@ public class BMSONDecoder {
 
 			List<String> wavmap = new ArrayList<String>();
 			int id = 0;
-			for (SoundChannel sc : bmson.soundChannel) {
+			int starttime = 0;
+			for (SoundChannel sc : bmson.sound_channels) {
 				wavmap.add(sc.name);
-				for (bms.model.bmson.Note n : sc.notes) {
+				for (int i = 0 ; i < sc.notes.length;i++) {
+					bms.model.bmson.Note n = sc.notes[i];
+					int duration = Integer.MAX_VALUE;
+					if(!n.c) {
+						starttime = 0;
+					}
+					if(i < sc.notes.length - 1) {
+						duration = (int) (1000.0 * 60 * 4 * (sc.notes[i + 1].y - n.y) / (nowbpm * 960));
+					}
 					if (n.x == 0) {
 						TimeLine tl = model
 								.getTimeLine(
 										n.y / 960f,
 										(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * 960)));
-						tl.addBackGroundNote(new NormalNote(id));
+						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 						tl.setBPM(nowbpm);
 					} else {
 						if (n.l > 0) {
@@ -80,12 +91,12 @@ public class BMSONDecoder {
 									.getTimeLine(
 											n.y / 960f,
 											(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * 960)));
-							LongNote ln = new LongNote(id, start);
+							LongNote ln = new LongNote(id, starttime, start);
 							start.addNote(n.x - 1, ln);
 							start.setBPM(nowbpm);
 							TimeLine end = model
 									.getTimeLine(
-											n.y / 960f,
+											(n.y + n.l) / 960f,
 											(int) ((1000.0 * 60 * 4 * (n.y + n.l)) / (nowbpm * 960)));
 							ln.setEnd(end);
 							end.addNote(n.x - 1, ln);
@@ -103,6 +114,9 @@ public class BMSONDecoder {
 				id++;
 			}
 			model.setWavList(wavmap.toArray(new String[0]));
+			Logger.getGlobal().info(
+					"BMSONファイル解析完了 :" + f.getName() + " - TimeLine数:"
+							+ model.getAllTimes().length);
 
 		} catch (JsonParseException e) {
 			// TODO 自動生成された catch ブロック
@@ -111,6 +125,9 @@ public class BMSONDecoder {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		} catch (Exception e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}

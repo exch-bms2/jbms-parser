@@ -25,12 +25,19 @@ public class LongNote extends Note {
 		this.setWav(wav);
 	}
 	
+	public LongNote(int wav,int starttime, TimeLine start) {
+		this.start = start;
+		this.setStarttime(starttime);
+		this.setWav(wav);
+	}
+	
 	/**
 	 * ロングノートの終点を設定する
 	 * @param time
 	 */
 	public void setEnd(TimeLine time) {
 		end = time;
+		this.setDuration(end.getTime() - start.getTime());
 	}
 	
 	/**
