@@ -111,6 +111,8 @@ public class BMSModel implements Comparable {
 	public static final int TOTALNOTES_LONG_SCRATCH = 4;
 	public static final int TOTALNOTES_MINE = 5;
 
+	private DecodeLog[] decodeLog = new DecodeLog[0];
+	
 	public BMSModel() {
 		setRandom(1);
 	}
@@ -563,5 +565,5 @@ public class BMSModel implements Comparable {
 	public void setLntype(int lntype) {
 		this.lntype = lntype;
 	}
-
+	
 }
