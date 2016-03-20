@@ -8,6 +8,11 @@ import java.util.*;
  * @author exch
  */
 public class BMSModel implements Comparable {
+	
+	/**
+	 * BMSのファイルパス
+	 */
+	private String path;
 	/**
 	 * プレイヤー数
 	 */
@@ -564,6 +569,14 @@ public class BMSModel implements Comparable {
 
 	public void setLntype(int lntype) {
 		this.lntype = lntype;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
 	}
 	
 }

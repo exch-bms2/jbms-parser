@@ -159,6 +159,7 @@ public class BMSDecoder {
 		try {
 			BMSModel model = this.decode(new FileInputStream(f), f.getName()
 					.toLowerCase().endsWith(".pms"));
+			model.setPath(f.getAbsolutePath());
 			Logger.getGlobal().info(
 					"BMSファイル解析完了 :" + f.getName() + " - TimeLine数:"
 							+ model.getAllTimes().length);
@@ -366,6 +367,9 @@ public class BMSDecoder {
 		}
 		Logger.getGlobal().info(
 				"BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
+		if(model.getTotal() <= 60.0) {
+			log.add(new DecodeLog(DecodeLog.STATE_WARNING, "TOTALが未定義か、値が少なすぎます"));
+		}
 		return model;
 	}
 

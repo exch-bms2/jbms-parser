@@ -15,6 +15,10 @@ public class LongNote extends Note {
 	 * ロングノート終了点
 	 */
 	private TimeLine end;
+	/**
+	 * 終端の状態
+	 */
+	private int endstate;
 	
 	/**
 	 * 指定のTimeLineを始点としたロングノートを作成する
@@ -54,5 +58,13 @@ public class LongNote extends Note {
 	 */
 	public TimeLine getEnd() {
 		return end;
+	}
+
+	public int getEndstate() {
+		return endstate;
+	}
+
+	public void setEndstate(int endstate) {
+		this.endstate = endstate;
 	}
 }

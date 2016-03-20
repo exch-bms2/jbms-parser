@@ -11,11 +11,17 @@ public abstract class Note {
 	 * アサインされている 音源ID
 	 */
 	private int wav;
-	
+	/**
+	 * 音源IDの音の開始時間
+	 */
 	private int start;
-	
+	/**
+	 * 音源IDの音を鳴らす長さ
+	 */
 	private int duration;
-	
+	/**
+	 * ノーツの状態
+	 */
 	private int state;
 
 	public int getWav() {
