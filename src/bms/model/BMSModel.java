@@ -8,7 +8,7 @@ import java.util.*;
  * @author exch
  */
 public class BMSModel implements Comparable {
-	
+
 	/**
 	 * BMSのファイルパス
 	 */
@@ -117,7 +117,7 @@ public class BMSModel implements Comparable {
 	public static final int TOTALNOTES_MINE = 5;
 
 	private DecodeLog[] decodeLog = new DecodeLog[0];
-	
+
 	public BMSModel() {
 		setRandom(1);
 	}
@@ -299,8 +299,7 @@ public class BMSModel implements Comparable {
 		return this.getTotalNotes(start, end, TOTALNOTES_ALL);
 	}
 
-	private static final int[] BMS_NORMALLANE = { 0, 1, 2, 3, 4, 5, 6, 9, 10,
-			11, 12, 13, 14, 15 };
+	private static final int[] BMS_NORMALLANE = { 0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15 };
 	private static final int[] BMS_NORMALLANE_1P = { 0, 1, 2, 3, 4, 5, 6 };
 	private static final int[] BMS_NORMALLANE_2P = { 9, 10, 11, 12, 13, 14, 15 };
 	private static final int[] PMS_NORMALLANE = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
@@ -350,7 +349,7 @@ public class BMSModel implements Comparable {
 			nlane = BMS_NORMALLANE_2P;
 			slane = BMS_SCRATCHLANE_2P;
 		}
-		
+
 		int count = 0;
 		for (TimeLine tl : this.getAllTimeLines()) {
 			if (tl.getTime() >= start && tl.getTime() < end) {
@@ -360,19 +359,16 @@ public class BMSModel implements Comparable {
 					break;
 				case TOTALNOTES_KEY:
 					for (int lane : nlane) {
-						if (tl.existNote(lane)
-								&& (tl.getNote(lane) instanceof NormalNote)) {
+						if (tl.existNote(lane) && (tl.getNote(lane) instanceof NormalNote)) {
 							count++;
 						}
 					}
 					break;
 				case TOTALNOTES_LONG_KEY:
 					for (int lane : nlane) {
-						if (tl.existNote(lane)
-								&& (tl.getNote(lane) instanceof LongNote)) {
+						if (tl.existNote(lane) && (tl.getNote(lane) instanceof LongNote)) {
 							LongNote ln = (LongNote) tl.getNote(lane);
-							if (lntype != LNTYPE_LONGNOTE
-									|| ln.getStart() == tl) {
+							if (lntype != LNTYPE_LONGNOTE || ln.getStart() == tl) {
 								count++;
 							}
 						}
@@ -380,19 +376,16 @@ public class BMSModel implements Comparable {
 					break;
 				case TOTALNOTES_SCRATCH:
 					for (int lane : slane) {
-						if (tl.existNote(lane)
-								&& (tl.getNote(lane) instanceof NormalNote)) {
+						if (tl.existNote(lane) && (tl.getNote(lane) instanceof NormalNote)) {
 							count++;
 						}
 					}
 					break;
 				case TOTALNOTES_LONG_SCRATCH:
 					for (int lane : slane) {
-						if (tl.existNote(lane)
-								&& (tl.getNote(lane) instanceof LongNote)) {
+						if (tl.existNote(lane) && (tl.getNote(lane) instanceof LongNote)) {
 							LongNote ln = (LongNote) tl.getNote(lane);
-							if (lntype != LNTYPE_LONGNOTE
-									|| ln.getStart() == tl) {
+							if (lntype != LNTYPE_LONGNOTE || ln.getStart() == tl) {
 								count++;
 							}
 						}
@@ -400,14 +393,12 @@ public class BMSModel implements Comparable {
 					break;
 				case TOTALNOTES_MINE:
 					for (int lane : nlane) {
-						if (tl.existNote(lane)
-								&& (tl.getNote(lane) instanceof MineNote)) {
+						if (tl.existNote(lane) && (tl.getNote(lane) instanceof MineNote)) {
 							count++;
 						}
 					}
 					for (int lane : slane) {
-						if (tl.existNote(lane)
-								&& (tl.getNote(lane) instanceof MineNote)) {
+						if (tl.existNote(lane) && (tl.getNote(lane) instanceof MineNote)) {
 							count++;
 						}
 					}
@@ -471,6 +462,20 @@ public class BMSModel implements Comparable {
 
 		for (int i = times.length - 1; i > 0; i--) {
 			for (int lane = 0; lane < 18; lane++) {
+				if (times[i].existNote(lane) || times[i].getHiddenNote(lane) != null
+						|| times[i].getBackGroundNotes().length > 0 || times[i].getBGA() != -1
+						|| times[i].getLayer() != -1) {
+					return times[i].getTime();
+				}
+			}
+		}
+		return 0;
+	}
+
+	public int getLastNoteTime() {
+		TimeLine[] times = getAllTimeLines();
+		for (int i = times.length - 1; i > 0; i--) {
+			for (int lane = 0; lane < 18; lane++) {
 				if (times[i].existNote(lane)) {
 					return times[i].getTime();
 				}
@@ -492,15 +497,11 @@ public class BMSModel implements Comparable {
 	}
 
 	public String getFullTitle() {
-		return title
-				+ (subTitle != null && subTitle.length() > 0 ? " " + subTitle
-						: "");
+		return title + (subTitle != null && subTitle.length() > 0 ? " " + subTitle : "");
 	}
 
 	public String getFullArtist() {
-		return artist
-				+ (subartist != null && subartist.length() > 0 ? " "
-						+ subartist : "");
+		return artist + (subartist != null && subartist.length() > 0 ? " " + subartist : "");
 	}
 
 	public void setHash(String hash) {
@@ -578,5 +579,5 @@ public class BMSModel implements Comparable {
 	public void setPath(String path) {
 		this.path = path;
 	}
-	
+
 }

@@ -370,6 +370,12 @@ public class BMSDecoder {
 		if(model.getTotal() <= 60.0) {
 			log.add(new DecodeLog(DecodeLog.STATE_WARNING, "TOTALが未定義か、値が少なすぎます"));
 		}
+		if(model.getAllTimeLines().length > 0) {
+			int[] times = model.getAllTimes();
+			if(times[times.length - 1] >= model.getLastTime() + 30000) {
+				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "最後のノート定義から30秒以上の余白があります"));				
+			}
+		}
 		return model;
 	}
 
