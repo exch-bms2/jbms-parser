@@ -9,7 +9,7 @@ import java.util.*;
  */
 public class TimeLine {
 	/**
-	 * タイムラインの時間
+	 * タイムラインの時間(ms)
 	 */
 	private int time;
 	/**
@@ -63,7 +63,7 @@ public class TimeLine {
 
 	/**
 	 * タイムライン上の総ノート数を返す
-	 *
+	 * 
 	 * @return
 	 */
 	public int getTotalNotes() {
@@ -72,7 +72,7 @@ public class TimeLine {
 
 	/**
 	 * タイムライン上の総ノート数を返す
-	 *
+	 * 
 	 * @return
 	 */
 	public int getTotalNotes(int lntype) {
@@ -80,8 +80,7 @@ public class TimeLine {
 		for (int i = 0; i < notes.length; i++) {
 			if (notes[i] != null) {
 				if (notes[i] instanceof LongNote) {
-					if (lntype != BMSModel.LNTYPE_LONGNOTE
-							|| (((LongNote) notes[i])).getStart() == this) {
+					if (lntype != BMSModel.LNTYPE_LONGNOTE || (((LongNote) notes[i])).getStart() == this) {
 						count++;
 					}
 				} else if (notes[i] instanceof NormalNote) {
@@ -92,6 +91,15 @@ public class TimeLine {
 		return count;
 	}
 
+	public boolean existNote() {
+		for (Note n : notes) {
+			if (n != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public boolean existNote(int lane) {
 		return notes[lane] != null;
 	}
@@ -100,12 +108,21 @@ public class TimeLine {
 		return notes[lane];
 	}
 
-	public void addNote(int lane, Note note) {
+	public void setNote(int lane, Note note) {
 		notes[lane] = note;
 	}
 
-	public void addHiddenNote(int lane, Note note) {
+	public void setHiddenNote(int lane, Note note) {
 		hiddennotes[lane] = note;
+	}
+
+	public boolean existHiddenNote() {
+		for (Note n : hiddennotes) {
+			if (n != null) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public Note getHiddenNote(int lane) {
@@ -114,6 +131,10 @@ public class TimeLine {
 
 	public void addBackGroundNote(Note note) {
 		bgnotes.add(note);
+	}
+
+	public void removeBackGroundNote(Note note) {
+		bgnotes.remove(note);
 	}
 
 	public Note[] getBackGroundNotes() {
@@ -136,14 +157,30 @@ public class TimeLine {
 		return sectionLine;
 	}
 
+	/**
+	 * 表示するBGAのIDを取得する
+	 * 
+	 * @return BGAのID
+	 */
 	public int getBGA() {
 		return bga;
 	}
 
+	/**
+	 * 表示するBGAのIDを設定する
+	 * 
+	 * @param bga
+	 *            BGAのID
+	 */
 	public void setBGA(int bga) {
 		this.bga = bga;
 	}
 
+	/**
+	 * 表示するレイヤーBGAのIDを取得する
+	 * 
+	 * @return レイヤーBGAのID
+	 */
 	public int getLayer() {
 		return layer;
 	}

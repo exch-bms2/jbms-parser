@@ -92,21 +92,21 @@ public class BMSONDecoder {
 											n.y / 960f,
 											(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * 960)));
 							LongNote ln = new LongNote(id, starttime, start);
-							start.addNote(n.x - 1, ln);
+							start.setNote(n.x - 1, ln);
 							start.setBPM(nowbpm);
 							TimeLine end = model
 									.getTimeLine(
 											(n.y + n.l) / 960f,
 											(int) ((1000.0 * 60 * 4 * (n.y + n.l)) / (nowbpm * 960)));
 							ln.setEnd(end);
-							end.addNote(n.x - 1, ln);
+							end.setNote(n.x - 1, ln);
 							end.setBPM(nowbpm);
 						} else {
 							TimeLine tl = model
 									.getTimeLine(
 											n.y / 960f,
 											(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * 960)));
-							tl.addNote(n.x - 1, new NormalNote(id));
+							tl.setNote(n.x - 1, new NormalNote(id));
 							tl.setBPM(nowbpm);
 						}
 					}

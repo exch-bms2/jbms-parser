@@ -516,8 +516,8 @@ public class Section {
 									if (note instanceof NormalNote) {
 										LongNote ln = new LongNote(note.getWav(), tl2[t]);
 										ln.setEnd(tl);
-										tl2[t].addNote(key % 18, ln);
-										tl.addNote(key % 18, ln);
+										tl2[t].setNote(key % 18, ln);
+										tl.setNote(key % 18, ln);
 										tl.setBPM(nowbpm);
 										break;
 									} else if (note instanceof LongNote && ((LongNote) note).getStart() == tl2[t]) {
@@ -528,7 +528,7 @@ public class Section {
 												model.getTitle() + "はLNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン:" + key
 														+ " - Time(ms):" + tl2[t].getTime());
 										((LongNote) note).setEnd(tl);
-										tl.addNote(key % 18, note);
+										tl.setNote(key % 18, note);
 										tl.setBPM(nowbpm);
 										break;
 									} else {
@@ -541,7 +541,7 @@ public class Section {
 								}
 							}
 						} else {
-							tl.addNote(key % 18, new NormalNote(getId(s[i], wavmap)));
+							tl.setNote(key % 18, new NormalNote(getId(s[i], wavmap)));
 							tl.setBPM(nowbpm);
 						}
 					}
@@ -551,14 +551,14 @@ public class Section {
 						// + (key - 17) + ":"
 						// + (base + (int) (dt * rate)));
 
-						tl.addHiddenNote(key % 18, new NormalNote(getId(s[i], wavmap)));
+						tl.setHiddenNote(key % 18, new NormalNote(getId(s[i], wavmap)));
 
 						tl.setBPM(nowbpm);
 					}
 					if (key >= 36 && key < 54) {
 						// LN処理
 						if (startln[key % 18] == null) {
-							tl.addNote(key % 18, new LongNote(getId(s[i], wavmap), tl));
+							tl.setNote(key % 18, new LongNote(getId(s[i], wavmap), tl));
 							tl.setBPM(nowbpm);
 							startln[key % 18] = s[i];
 						} else {
@@ -569,7 +569,7 @@ public class Section {
 									Note note = tl2[t].getNote(key % 18);
 									if (note instanceof LongNote) {
 										((LongNote) note).setEnd(tl);
-										tl.addNote(key % 18, note);
+										tl.setNote(key % 18, note);
 										tl.setBPM(nowbpm);
 										startln[key % 18] = null;
 										break;
@@ -593,7 +593,7 @@ public class Section {
 									model.getTitle() + "の地雷ノート追加時に衝突が発生しました。" + (key - 53) + ":"
 											+ (base + (int) (dt * rate)));
 						}
-						tl.addNote(key % 18, new MineNote(getId("00", wavmap), Integer.parseInt(s[i], 36)));
+						tl.setNote(key % 18, new MineNote(getId("00", wavmap), Integer.parseInt(s[i], 36)));
 						tl.setBPM(nowbpm);
 					}
 					if (key == 72) {

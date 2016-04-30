@@ -579,5 +579,27 @@ public class BMSModel implements Comparable {
 	public void setPath(String path) {
 		this.path = path;
 	}
+	
+	public boolean containsLongNote() {
+		for(TimeLine tl : this.getAllTimeLines()) {
+			for(int i = 0;i < 18;i++) {
+				if(tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	public boolean containsMineNote() {
+		for(TimeLine tl : this.getAllTimeLines()) {
+			for(int i = 0;i < 18;i++) {
+				if(tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
+					return true;
+				}
+			}
+		}
+		return false;		
+	}
 
 }
