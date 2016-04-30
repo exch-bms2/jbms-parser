@@ -514,6 +514,7 @@ public class Section {
 								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(key % 18)) {
 									Note note = tl2[t].getNote(key % 18);
 									if (note instanceof NormalNote) {
+										// LNOBJの直前のノートをLNに差し替える
 										LongNote ln = new LongNote(note.getWav(), tl2[t]);
 										ln.setEnd(tl);
 										tl2[t].setNote(key % 18, ln);
@@ -537,6 +538,8 @@ public class Section {
 										Logger.getGlobal().warning(
 												model.getTitle() + "はLNオブジェクトの対応が取れません。レーン:" + key + " - Time(ms):"
 														+ tl2[t].getTime());
+										tl.setBPM(nowbpm);
+										break;
 									}
 								}
 							}

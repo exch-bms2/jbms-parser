@@ -23,6 +23,10 @@ public abstract class Note {
 	 * ノーツの状態
 	 */
 	private int state;
+	/**
+	 * ノーツの演奏時間
+	 */
+	private int time;
 
 	public int getWav() {
 		return wav;
@@ -54,6 +58,14 @@ public abstract class Note {
 
 	public void setDuration(int duration) {
 		this.duration = duration;
+	}
+
+	public int getTime() {
+		return time;
+	}
+
+	public void setTime(int time) {
+		this.time = time;
 	}
 
 }

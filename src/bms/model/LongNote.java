@@ -19,6 +19,10 @@ public class LongNote extends Note {
 	 * 終端の状態
 	 */
 	private int endstate;
+	/**
+	 * 終端の演奏時間
+	 */
+	private int endtime;
 	
 	/**
 	 * 指定のTimeLineを始点としたロングノートを作成する
@@ -66,5 +70,13 @@ public class LongNote extends Note {
 
 	public void setEndstate(int endstate) {
 		this.endstate = endstate;
+	}
+
+	public int getEndtime() {
+		return endtime;
+	}
+
+	public void setEndtime(int endtime) {
+		this.endtime = endtime;
 	}
 }
