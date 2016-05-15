@@ -1,9 +1,14 @@
 package bms.model;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.logging.Logger;
+
+import javax.imageio.stream.FileImageInputStream;
+
+import org.apache.commons.io.IOUtils;
 
 import bms.model.bmson.*;
 
@@ -27,9 +32,14 @@ public class BMSONDecoder {
 	public BMSModel decode(File f) {
 		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.getName());
 		BMSModel model = new BMSModel();
+		
 		try {
+			// BMS読み込み、ハッシュ値取得
+			MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			byte[] data = IOUtils.toByteArray(new DigestInputStream(new FileInputStream(f), digest));
+			model.setHash(BMSDecoder.convertHexString(digest.digest()));
 			ObjectMapper mapper = new ObjectMapper();
-			Bmson bmson = mapper.readValue(f, Bmson.class);
+			Bmson bmson = mapper.readValue(new ByteArrayInputStream(data), Bmson.class);
 			model.setTitle(bmson.info.title);
 			model.setArtist(bmson.info.artist);
 			model.setGenre(bmson.info.genre);
