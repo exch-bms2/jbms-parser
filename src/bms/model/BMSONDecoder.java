@@ -6,8 +6,6 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.logging.Logger;
 
-import javax.imageio.stream.FileImageInputStream;
-
 import org.apache.commons.io.IOUtils;
 
 import bms.model.bmson.*;
@@ -31,13 +29,13 @@ public class BMSONDecoder {
 
 	public BMSModel decode(File f) {
 		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.getName());
-		BMSModel model = new BMSModel();
 		
 		try {
 			// BMS読み込み、ハッシュ値取得
-			MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			BMSModel model = new BMSModel();
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			byte[] data = IOUtils.toByteArray(new DigestInputStream(new FileInputStream(f), digest));
-			model.setHash(BMSDecoder.convertHexString(digest.digest()));
+			model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
 			ObjectMapper mapper = new ObjectMapper();
 			Bmson bmson = mapper.readValue(new ByteArrayInputStream(data), Bmson.class);
 			model.setTitle(bmson.info.title);
@@ -127,7 +125,7 @@ public class BMSONDecoder {
 			Logger.getGlobal().info(
 					"BMSONファイル解析完了 :" + f.getName() + " - TimeLine数:"
 							+ model.getAllTimes().length);
-
+			return model;
 		} catch (JsonParseException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
@@ -141,6 +139,6 @@ public class BMSONDecoder {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
-		return model;
+		return null;
 	}
 }

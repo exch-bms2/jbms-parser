@@ -5,7 +5,7 @@ package bms.model;
  * 
  * @author exch
  */
-public abstract class Note {
+public abstract class Note implements Cloneable {
 
 	/**
 	 * アサインされている 音源ID
@@ -68,4 +68,14 @@ public abstract class Note {
 		this.time = time;
 	}
 
+	@Override
+	public Object clone() {
+		try {
+			return super.clone();
+		} catch (CloneNotSupportedException e) {
+		}
+		return null;
+	}
+
+	
 }

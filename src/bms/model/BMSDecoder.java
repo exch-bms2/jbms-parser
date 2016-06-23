@@ -23,7 +23,7 @@ public class BMSDecoder {
 
 	private int lntype;
 	
-	private List<DecodeLog> log = new ArrayList();
+	private List<DecodeLog> log = new ArrayList<DecodeLog>();
 	
 	public BMSDecoder() {
 		this(BMSModel.LNTYPE_LONGNOTE);
@@ -159,6 +159,9 @@ public class BMSDecoder {
 		try {
 			BMSModel model = this.decode(new FileInputStream(f), f.getName()
 					.toLowerCase().endsWith(".pms"));
+			if(model == null) {
+				return null;
+			}
 			model.setPath(f.getAbsolutePath());
 			Logger.getGlobal().info(
 					"BMSファイル解析完了 :" + f.getName() + " - TimeLine数:"
@@ -170,7 +173,7 @@ public class BMSDecoder {
 					"BMSファイル解析中の例外 : " + e.getClass().getName() + " - "
 							+ e.getMessage());
 		}
-		return new BMSModel();
+		return null;
 	}
 
 	/**
@@ -183,16 +186,18 @@ public class BMSDecoder {
 		log.clear();
 		long time = System.currentTimeMillis();
 		byte[] data = new byte[0];
-		BMSModel model = new BMSModel();
 
-		if (ispms) {
-			model.setUseKeys(9);
-		}
 		try {
+			BMSModel model = new BMSModel();
+			if (ispms) {
+				model.setUseKeys(9);
+			}
 			// BMS読み込み、ハッシュ値取得
-			MessageDigest digest = MessageDigest.getInstance("MD5");
-			data = IOUtils.toByteArray(new DigestInputStream(is, digest));
-			model.setHash(convertHexString(digest.digest()));
+			MessageDigest md5digest = MessageDigest.getInstance("MD5");
+			MessageDigest sha256digest = MessageDigest.getInstance("SHA-256");
+			data = IOUtils.toByteArray(new DigestInputStream(new DigestInputStream(is, md5digest), sha256digest));
+			model.setMD5(convertHexString(md5digest.digest()));
+			model.setSHA256(convertHexString(sha256digest.digest()));
 			is.close();
 			// Logger.getGlobal().info(
 			// "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
@@ -301,7 +306,7 @@ public class BMSDecoder {
 				}
 			}
 			String[] wavlist = new String[wavmap.keySet().size()];
-			Map<String, Integer> wm = new HashMap();
+			Map<String, Integer> wm = new HashMap<String, Integer>();
 			int id = 0;
 			for(String key : wavmap.keySet()) {
 				wavlist[id] = wavmap.get(key);
@@ -309,7 +314,7 @@ public class BMSDecoder {
 				id++;
 			}
 			String[] bgalist = new String[bgamap.keySet().size()];
-			Map<String, Integer> bm = new HashMap();
+			Map<String, Integer> bm = new HashMap<String, Integer>();
 			id = 0;
 			for(String key : bgamap.keySet()) {
 				bgalist[id] = bgamap.get(key);
@@ -349,6 +354,18 @@ public class BMSDecoder {
 			}
 			model.setSelectedIndexOfTimeLines(1);
 			model.setLntype(lntype);
+			Logger.getGlobal().info(
+					"BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
+			if(model.getTotal() <= 60.0) {
+				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "TOTALが未定義か、値が少なすぎます"));
+			}
+			if(model.getAllTimeLines().length > 0) {
+				int[] times = model.getAllTimes();
+				if(times[times.length - 1] >= model.getLastTime() + 30000) {
+					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "最後のノート定義から30秒以上の余白があります"));				
+				}
+			}
+			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(DecodeLog.STATE_ERROR, "BMSファイルへのアクセスに失敗しました"));
 			Logger.getGlobal().severe(
@@ -365,18 +382,7 @@ public class BMSDecoder {
 							+ e.getMessage());
 			e.printStackTrace();
 		}
-		Logger.getGlobal().info(
-				"BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
-		if(model.getTotal() <= 60.0) {
-			log.add(new DecodeLog(DecodeLog.STATE_WARNING, "TOTALが未定義か、値が少なすぎます"));
-		}
-		if(model.getAllTimeLines().length > 0) {
-			int[] times = model.getAllTimes();
-			if(times[times.length - 1] >= model.getLastTime() + 30000) {
-				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "最後のノート定義から30秒以上の余白があります"));				
-			}
-		}
-		return model;
+		return null;
 	}
 
 	private boolean matchesReserveWord(String line, String s) {

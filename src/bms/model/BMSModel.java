@@ -46,7 +46,9 @@ public class BMSModel implements Comparable {
 	 * バナー
 	 */
 	private String banner = "";
-
+	/**
+	 * ステージ画像
+	 */
 	private String stagefile = "";
 	private String backbmp = "";
 	/**
@@ -74,9 +76,13 @@ public class BMSModel implements Comparable {
 	 */
 	private int volwav;
 	/**
-	 * ハッシュ値
+	 * MD5値
 	 */
-	private String hash = "";
+	private String md5 = "";
+	/**
+	 * SHA256値
+	 */
+	private String sha256 = "";
 	/**
 	 * WAV定義のIDとファイル名のマップ
 	 */
@@ -107,7 +113,7 @@ public class BMSModel implements Comparable {
 	/**
 	 * TimeLineリスト
 	 */
-	private List<Map<Float, TimeLine>> timelineList = new ArrayList();
+	private List<Map<Float, TimeLine>> timelineList = new ArrayList<Map<Float, TimeLine>>();
 
 	public static final int TOTALNOTES_ALL = 0;
 	public static final int TOTALNOTES_KEY = 1;
@@ -115,8 +121,6 @@ public class BMSModel implements Comparable {
 	public static final int TOTALNOTES_SCRATCH = 3;
 	public static final int TOTALNOTES_LONG_SCRATCH = 4;
 	public static final int TOTALNOTES_MINE = 5;
-
-	private DecodeLog[] decodeLog = new DecodeLog[0];
 
 	public BMSModel() {
 		setRandom(1);
@@ -504,12 +508,28 @@ public class BMSModel implements Comparable {
 		return artist + (subartist != null && subartist.length() > 0 ? " " + subartist : "");
 	}
 
-	public void setHash(String hash) {
-		this.hash = hash;
+	public void setMD5(String hash) {
+		this.md5 = hash;
 	}
 
+	public String getMD5() {
+		return md5;
+	}
+	
+	public String getSHA256() {
+		return sha256;
+	}
+
+	public void setSHA256(String sha256) {
+		this.sha256 = sha256;
+	}
+
+	/**
+	 * ハッシュ値を取得する。廃止予定
+	 * @return
+	 */
 	public String getHash() {
-		return hash;
+		return md5;
 	}
 
 	public void setUseKeys(int keys) {
