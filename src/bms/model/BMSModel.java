@@ -108,6 +108,7 @@ public class BMSModel implements Comparable {
 	 */
 	private Map<Float, TimeLine> timelines = new HashMap<Float, TimeLine>();
 
+	private TimeLine[] _timelines;
 	private int random;
 
 	/**
@@ -128,6 +129,7 @@ public class BMSModel implements Comparable {
 
 	public void setSelectedIndexOfTimeLines(int index) {
 		timelines = timelineList.get(index - 1);
+		_timelines = null;		
 	}
 
 	public int getSelectedIndexOfTimeLines() {
@@ -438,18 +440,22 @@ public class BMSModel implements Comparable {
 			tl = new TimeLine(time);
 			tl.setSection(section);
 			timelines.put(section, tl);
+			_timelines = null;
 		}
 		return tl;
 	}
 
 	public TimeLine[] getAllTimeLines() {
+		if(_timelines != null) {
+			return _timelines;
+		}
 		Float[] times = timelines.keySet().toArray(new Float[0]);
 		Arrays.sort(times);
-		TimeLine[] tls = new TimeLine[times.length];
+		_timelines = new TimeLine[times.length];
 		for (int i = 0; i < times.length; i++) {
-			tls[i] = timelines.get(times[i]);
+			_timelines[i] = timelines.get(times[i]);
 		}
-		return tls;
+		return _timelines;
 	}
 
 	public int[] getAllTimes() {
