@@ -185,7 +185,7 @@ public class BMSDecoder {
 			MessageDigest sha256digest = MessageDigest.getInstance("SHA-256");
 			data = IOUtils.toByteArray(new DigestInputStream(new DigestInputStream(is, md5digest), sha256digest));
 			model.setMD5(convertHexString(md5digest.digest()));
-			model.setSHA256(convertHexString(sha256digest.digest()));			
+			model.setSHA256(convertHexString(sha256digest.digest()));
 		} catch (NoSuchAlgorithmException | IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -196,10 +196,10 @@ public class BMSDecoder {
 			}
 		}
 
-		if(data == null) {
+		if (data == null) {
 			return null;
 		}
-		
+
 		ByteArrayInputStream bias = new ByteArrayInputStream(data);
 		BufferedReader br = null;
 		try {
@@ -219,7 +219,7 @@ public class BMSDecoder {
 			lines.put(0, new HashMap<Integer, List<String>>());
 			lines.put(1, new HashMap<Integer, List<String>>());
 			while ((line = br.readLine()) != null) {
-				if (line.length() >= 1 && line.charAt(0) == '#') {
+				if (line.length() >= 2 && line.charAt(0) == '#') {
 					line = line.substring(1, line.length());
 					char c = line.charAt(0);
 					if ('0' <= c && c <= '9') {
@@ -260,22 +260,37 @@ public class BMSDecoder {
 						}
 					} else if (matchesReserveWord(line, "WAV")) {
 						// 音源ファイル
-						String id = line.substring(3, 5).toUpperCase();
-						String file_name = line.substring(6, line.length());
-						wavmap.put(id, file_name);
+						if (line.length() >= 7) {
+							String id = line.substring(3, 5).toUpperCase();
+							String file_name = line.substring(6, line.length());
+							wavmap.put(id, file_name);
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#WAVxxは不十分な定義です : " + line));
+							Logger.getGlobal().warning("BMSファイルの解析中の例外:#WAVxxは不十分な定義です : " + line);
+						}
 					} else if (matchesReserveWord(line, "BMP")) {
 						// BGAファイル
-						String id = line.substring(3, 5).toUpperCase();
-						String file_name = line.substring(6, line.length());
-						bgamap.put(id, file_name);
+						if (line.length() >= 7) {
+							String id = line.substring(3, 5).toUpperCase();
+							String file_name = line.substring(6, line.length());
+							bgamap.put(id, file_name);
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#BMPxxは不十分な定義です : " + line));
+							Logger.getGlobal().warning("BMSファイルの解析中の例外:#BMPxxは不十分な定義です : " + line);
+						}
 					} else if (matchesReserveWord(line, "STOP")) {
-						String id = line.substring(4, 6).toUpperCase();
-						String stop = line.substring(7, line.length());
-						try {
-							model.putStop(id, Double.parseDouble(stop) / 192);
-						} catch (NumberFormatException e) {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#STOPxxに数字が定義されていません : " + line));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:#STOP" + id + " :" + stop);
+						if (line.length() >= 8) {
+							String id = line.substring(4, 6).toUpperCase();
+							String stop = line.substring(7, line.length());
+							try {
+								model.putStop(id, Double.parseDouble(stop) / 192);
+							} catch (NumberFormatException e) {
+								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#STOPxxに数字が定義されていません : " + line));
+								Logger.getGlobal().warning("BMSファイルの解析中の例外:#STOP" + id + " :" + stop);
+							}							
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#STOPxxは不十分な定義です : " + line));
+							Logger.getGlobal().warning("BMSファイルの解析中の例外:#STOPxxは不十分な定義です : " + line);							
 						}
 					} else if (matchesReserveWord(line, "IF ")) {
 						// RANDOM分岐開始
@@ -368,7 +383,7 @@ public class BMSDecoder {
 			Logger.getGlobal().severe("BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 			e.printStackTrace();
 		} finally {
-			if(br != null) {
+			if (br != null) {
 				try {
 					br.close();
 				} catch (IOException e) {

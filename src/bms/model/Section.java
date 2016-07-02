@@ -168,7 +168,14 @@ public class Section {
 				double[] d2 = new double[bpmdatas.length];
 				for (int j = 0; j < bpmdatas.length; j++) {
 					if (!bpmdatas[j].equals("00")) {
-						d2[j] = model.getBPM(bpmdatas[j]);
+						Double bpm = model.getBPM(bpmdatas[j]);
+						if(bpm != null) {
+							d2[j] = bpm;							
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "未定義のBPM変化を参照しています : " + bpmdatas[j]));
+							Logger.getGlobal().warning("BMSファイルの解析中の例外:未定義のBPM変化を参照しています :  " + bpmdatas[j]);
+							d2[j] = 0;
+						}
 					} else {
 						d2[j] = 0;
 					}
@@ -181,7 +188,14 @@ public class Section {
 				stop = new double[stopdatas.length];
 				for (int j = 0; j < stopdatas.length; j++) {
 					if (!stopdatas[j].equals("00")) {
-						stop[j] = model.getStop(stopdatas[j]);
+						Double st = model.getStop(stopdatas[j]);
+						if(st != null) {
+							stop[j] = st;							
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "未定義のSTOPを参照しています : " + stopdatas[j]));
+							Logger.getGlobal().warning("BMSファイルの解析中の例外:未定義のSTOPを参照しています :  " + stopdatas[j]);
+							stop[j] = 0;							
+						}
 					} else {
 						stop[j] = 0;
 					}

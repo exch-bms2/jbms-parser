@@ -237,7 +237,7 @@ public class BMSModel implements Comparable {
 		stoptable.put(id, time);
 	}
 
-	public double getStop(String id) {
+	public Double getStop(String id) {
 		return stoptable.get(id);
 	}
 
@@ -245,7 +245,7 @@ public class BMSModel implements Comparable {
 		bpmtable.put(id, bpm);
 	}
 
-	public double getBPM(String id) {
+	public Double getBPM(String id) {
 		return bpmtable.get(id);
 	}
 
