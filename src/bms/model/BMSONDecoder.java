@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class BMSONDecoder {
 
+	private BMSModel model;
+
 	private int lntype;
 
 	private List<DecodeLog> log = new ArrayList<DecodeLog>();
@@ -35,8 +37,9 @@ public class BMSONDecoder {
 		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.getName());
 		log.clear();
 		try {
+			long currnttime = System.currentTimeMillis();
 			// BMS読み込み、ハッシュ値取得
-			BMSModel model = new BMSModel();
+			model = new BMSModel();
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			byte[] data = IOUtils.toByteArray(new DigestInputStream(new FileInputStream(f), digest));
 			model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
@@ -75,30 +78,27 @@ public class BMSONDecoder {
 			model.setBackbmp(bmson.info.back_image);
 			model.setStagefile(bmson.info.eyecatch_image);
 
-			float resolution = 960;
-			if (bmson.info.resolution > 0) {
-				resolution = bmson.info.resolution * 4;
-			}
-			double nowbpm = model.getBpm();
-			// TODO BPM変化に伴うTime算出
-			// bpmNotes処理
-			for (EventNote n : bmson.bpm_events) {
-				model.getTimeLine(n.y / 960f, (int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * resolution))).setBPM(n.v);
-			}
+			final float resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
 
+			int stoppos = 0;
+			// bpmNotes, stopNotes処理
+			for (EventNote n : bmson.bpm_events) {
+				while (stoppos < bmson.stop_events.length && bmson.stop_events[stoppos].y <= n.y) {
+					TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
+					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].v) / (tl.getBPM() * resolution)));
+					stoppos++;
+				}
+				getTimeLine(n.y, resolution).setBPM(n.v);
+			}
+			while (stoppos < bmson.stop_events.length) {
+				TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
+				tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].v) / (tl.getBPM() * resolution)));
+				stoppos++;
+			}
 			// lines処理(小節線)
 			for (BarLine bl : bmson.lines) {
-				TimeLine tl = model.getTimeLine(bl.y / resolution,
-						(int) ((1000.0 * 60 * 4 * bl.y) / (nowbpm * resolution)));
+				TimeLine tl = getTimeLine(bl.y, resolution);
 				tl.setSectionLine(true);
-				tl.setBPM(nowbpm);
-			}
-			// stopNotes処理
-			for (EventNote n : bmson.stop_events) {
-				TimeLine tl = model.getTimeLine(n.y / resolution,
-						(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * resolution)));
-				tl.setStop((int) ((1000.0 * 60 * 4 * n.v) / (nowbpm * resolution)));
-				tl.setBPM(nowbpm);
 			}
 
 			List<String> wavmap = new ArrayList<String>();
@@ -113,47 +113,71 @@ public class BMSONDecoder {
 						starttime = 0;
 					}
 					if (i < sc.notes.length - 1) {
-						duration = (int) (1000.0 * 60 * 4 * (sc.notes[i + 1].y - n.y) / (nowbpm * resolution));
+						duration = getTimeLine(sc.notes[i + 1].y, resolution).getTime()
+								- getTimeLine(n.y, resolution).getTime();
 					}
 					if (n.x == 0) {
 						// BGノート
-						TimeLine tl = model.getTimeLine(n.y / resolution,
-								(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * resolution)));
+						TimeLine tl = getTimeLine(n.y, resolution);
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
-						tl.setBPM(nowbpm);
 					} else {
 						if (n.l > 0) {
 							// ロングノート
-							TimeLine start = model.getTimeLine(n.y / resolution,
-									(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * resolution)));
+							TimeLine start = getTimeLine(n.y, resolution);
 							LongNote ln = new LongNote(id, starttime, start);
 							start.setNote(n.x - 1, ln);
-							start.setBPM(nowbpm);
-							TimeLine end = model.getTimeLine((n.y + n.l) / resolution,
-									(int) ((1000.0 * 60 * 4 * (n.y + n.l)) / (nowbpm * resolution)));
+							TimeLine end = getTimeLine(n.y + n.l, resolution);
 							ln.setEnd(end);
 							end.setNote(n.x - 1, ln);
-							end.setBPM(nowbpm);
 						} else {
 							// 通常ノート
-							TimeLine tl = model.getTimeLine(n.y / resolution,
-									(int) ((1000.0 * 60 * 4 * n.y) / (nowbpm * resolution)));
+							TimeLine tl = getTimeLine(n.y, resolution);
 							if (tl.existNote(n.x - 1)) {
 								Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
 										+ " y : " + n.y));
 							}
 							tl.setNote(n.x - 1, new NormalNote(id, starttime, duration));
-							tl.setBPM(nowbpm);
 						}
 					}
 					starttime += duration;
 				}
 				id++;
 			}
-			// TODO BGA処理
 			model.setWavList(wavmap.toArray(new String[0]));
-			Logger.getGlobal().info("BMSONファイル解析完了 :" + f.getName() + " - TimeLine数:" + model.getAllTimes().length);
+			// BGA処理
+			List<String> bgamap = new ArrayList();
+			Map<Integer, Integer> idmap = new HashMap();
+			if (bmson.bga != null && bmson.bga.bga_header != null) {
+				for (int i = 0; i < bmson.bga.bga_header.length; i++) {
+					BGAHeader bh = bmson.bga.bga_header[i];
+					bgamap.add(bh.name);
+					idmap.put(bh.ID, i);
+				}
+				if (bmson.bga.bga_events != null) {
+					for (BNote n : bmson.bga.bga_events) {
+						TimeLine tl = getTimeLine(n.y, resolution);
+						tl.setBGA(idmap.get(n.ID));
+					}
+				}
+				if (bmson.bga.layer_events != null) {
+					for (BNote n : bmson.bga.layer_events) {
+						TimeLine tl = getTimeLine(n.y, resolution);
+						tl.setLayer(idmap.get(n.ID));
+					}
+				}
+				if (bmson.bga.poor_events != null) {
+					for (BNote n : bmson.bga.poor_events) {
+						TimeLine tl = getTimeLine(n.y, resolution);
+						tl.setPoor(new int[] { idmap.get(n.ID) });
+					}
+				}
+
+			}
+
+			Logger.getGlobal().info(
+					"BMSONファイル解析完了 :" + f.getName() + " - TimeLine数:" + model.getAllTimes().length + " 時間(ms):"
+							+ (System.currentTimeMillis() - currnttime));
 			return model;
 		} catch (JsonParseException e) {
 			// TODO 自動生成された catch ブロック
@@ -169,5 +193,29 @@ public class BMSONDecoder {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	private TimeLine getTimeLine(int y, float resolution) {
+		double bpm = model.getBpm();
+		double time = 0;
+		double section = 0;
+		TimeLine[] timelines = model.getAllTimeLines();
+		for (TimeLine tl : timelines) {
+			if (tl.getSection() > y / resolution) {
+				time += (1000.0 * 60 * 4 * (y / resolution - section)) / bpm;
+				break;
+			} else {
+				time += (1000.0 * 60 * 4 * (tl.getSection() - section)) / bpm;
+				bpm = tl.getBPM();
+				section = tl.getSection();
+			}
+			time += tl.getStop();
+		}
+		if (timelines.length > 0 && timelines[timelines.length - 1].getSection() < y / resolution) {
+			time += (1000.0 * 60 * 4 * (y / resolution - section)) / bpm;
+		}
+		TimeLine tl = model.getTimeLine(y / resolution, (int) time);
+		tl.setBPM(bpm);
+		return tl;
 	}
 }
