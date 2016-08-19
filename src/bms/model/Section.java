@@ -708,7 +708,7 @@ public class Section {
 		if (map.containsKey(s)) {
 			return map.get(s);
 		}
-		return -1;
+		return -2;
 	}
 	
 	public List<DecodeLog> getDecodeLog() {

@@ -129,7 +129,7 @@ public class BMSModel implements Comparable {
 
 	public void setSelectedIndexOfTimeLines(int index) {
 		timelines = timelineList.get(index - 1);
-		_timelines = null;		
+		_timelines = null;
 	}
 
 	public int getSelectedIndexOfTimeLines() {
@@ -374,7 +374,10 @@ public class BMSModel implements Comparable {
 					for (int lane : nlane) {
 						if (tl.existNote(lane) && (tl.getNote(lane) instanceof LongNote)) {
 							LongNote ln = (LongNote) tl.getNote(lane);
-							if (lntype != LNTYPE_LONGNOTE || ln.getStart() == tl) {
+							if (ln.getType() == LongNote.TYPE_CHARGENOTE
+									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
+									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
+									|| ln.getStart() == tl) {
 								count++;
 							}
 						}
@@ -391,7 +394,10 @@ public class BMSModel implements Comparable {
 					for (int lane : slane) {
 						if (tl.existNote(lane) && (tl.getNote(lane) instanceof LongNote)) {
 							LongNote ln = (LongNote) tl.getNote(lane);
-							if (lntype != LNTYPE_LONGNOTE || ln.getStart() == tl) {
+							if (ln.getType() == LongNote.TYPE_CHARGENOTE
+									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
+									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
+									|| ln.getStart() == tl) {
 								count++;
 							}
 						}
@@ -446,7 +452,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public TimeLine[] getAllTimeLines() {
-		if(_timelines != null) {
+		if (_timelines != null) {
 			return _timelines;
 		}
 		Float[] times = timelines.keySet().toArray(new Float[0]);
@@ -521,7 +527,7 @@ public class BMSModel implements Comparable {
 	public String getMD5() {
 		return md5;
 	}
-	
+
 	public String getSHA256() {
 		return sha256;
 	}
@@ -532,6 +538,7 @@ public class BMSModel implements Comparable {
 
 	/**
 	 * ハッシュ値を取得する。廃止予定
+	 * 
 	 * @return
 	 */
 	public String getHash() {
@@ -605,27 +612,39 @@ public class BMSModel implements Comparable {
 	public void setPath(String path) {
 		this.path = path;
 	}
-	
-	public boolean containsLongNote() {
-		for(TimeLine tl : this.getAllTimeLines()) {
-			for(int i = 0;i < 18;i++) {
-				if(tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
+
+	public boolean containsUndefinedLongNote() {
+		for (TimeLine tl : this.getAllTimeLines()) {
+			for (int i = 0; i < 18; i++) {
+				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote
+						&& ((LongNote) tl.getNote(i)).getType() == LongNote.TYPE_UNDEFINED) {
 					return true;
 				}
 			}
 		}
 		return false;
 	}
-	
-	public boolean containsMineNote() {
-		for(TimeLine tl : this.getAllTimeLines()) {
-			for(int i = 0;i < 18;i++) {
-				if(tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
+
+	public boolean containsLongNote() {
+		for (TimeLine tl : this.getAllTimeLines()) {
+			for (int i = 0; i < 18; i++) {
+				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
 					return true;
 				}
 			}
 		}
-		return false;		
+		return false;
+	}
+
+	public boolean containsMineNote() {
+		for (TimeLine tl : this.getAllTimeLines()) {
+			for (int i = 0; i < 18; i++) {
+				if (tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 }

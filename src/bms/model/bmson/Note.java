@@ -5,4 +5,6 @@ public class Note {
 	public int y; // as locate( 240BPM,1sec = 960 )
 	public int l; // as length( 0:normal note 1- : long note)
 	public boolean c; // as whether or not to play sound file at start.
+	
+	public int t; // as type
 }

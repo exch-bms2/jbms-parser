@@ -20,6 +20,9 @@ public class TimeLine {
 	 * タイムライン上に配置されている16レーン分(+フリースクラッチ)のノート。配置されていないレーンにはnullを入れる。
 	 */
 	private Note[] notes = new Note[18];
+
+	public static final int[] NOTEASSIGN_BEAT = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 };
+	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
 	/**
 	 * タイムライン上に配置されている16レーン分(+フリースクラッチ)の不可視ノート。配置されていないレーンにはnullを入れる。
 	 */
@@ -80,7 +83,10 @@ public class TimeLine {
 		for (int i = 0; i < notes.length; i++) {
 			if (notes[i] != null) {
 				if (notes[i] instanceof LongNote) {
-					if (lntype != BMSModel.LNTYPE_LONGNOTE || (((LongNote) notes[i])).getStart() == this) {
+					final LongNote ln = (LongNote) notes[i];
+					if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
+							|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BMSModel.LNTYPE_LONGNOTE)
+							|| ln.getStart() == this) {
 						count++;
 					}
 				} else if (notes[i] instanceof NormalNote) {

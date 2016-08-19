@@ -4,11 +4,16 @@ import java.io.*;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.IOUtils;
 
 import bms.model.bmson.*;
+import bms.model.bmson.Note;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -72,6 +77,29 @@ public class BMSONDecoder {
 			model.setBpm(bmson.info.init_bpm);
 			model.setPlaylevel(String.valueOf(bmson.info.level));
 			model.setUseKeys(7);
+			int[] assign = TimeLine.NOTEASSIGN_BEAT;
+			if(bmson.info.mode_hint != null) {
+				if(bmson.info.mode_hint.equals("beat-5k")) {
+					model.setUseKeys(5);					
+				}
+				if(bmson.info.mode_hint.equals("beat-7k")) {
+					model.setUseKeys(7);
+				}
+				if(bmson.info.mode_hint.equals("beat-10k")) {
+					model.setUseKeys(10);					
+				}
+				if(bmson.info.mode_hint.equals("beat-14k")) {
+					model.setUseKeys(14);										
+				}
+				if(bmson.info.mode_hint.equals("popn-5k")) {
+					model.setUseKeys(9);															
+					assign = TimeLine.NOTEASSIGN_POPN;
+				}
+				if(bmson.info.mode_hint.equals("popn-9k")) {
+					model.setUseKeys(9);																				
+					assign = TimeLine.NOTEASSIGN_POPN;
+				}
+			}
 			model.setLntype(lntype);
 
 			model.setBanner(bmson.info.banner_image);
@@ -106,14 +134,27 @@ public class BMSONDecoder {
 			int starttime = 0;
 			for (SoundChannel sc : bmson.sound_channels) {
 				wavmap.add(sc.name);
+				Arrays.sort(sc.notes, new Comparator<bms.model.bmson.Note>() {
+					@Override
+					public int compare(Note n1, Note n2) {
+						return n1.y - n2.y;
+					}
+				});
 				for (int i = 0; i < sc.notes.length; i++) {
-					bms.model.bmson.Note n = sc.notes[i];
-					int duration = Integer.MAX_VALUE;
+					final bms.model.bmson.Note n = sc.notes[i];
+					bms.model.bmson.Note next = null;
+					for(int j = i + 1; j < sc.notes.length; j++) {
+						if(sc.notes[j].y > n.y) {
+							next = sc.notes[j];
+							break;
+						}
+					}
+					int duration = 0;
 					if (!n.c) {
 						starttime = 0;
 					}
-					if (i < sc.notes.length - 1) {
-						duration = getTimeLine(sc.notes[i + 1].y, resolution).getTime()
+					if (next != null && next.c) {
+						duration = getTimeLine(next.y, resolution).getTime()
 								- getTimeLine(n.y, resolution).getTime();
 					}
 					if (n.x == 0) {
@@ -121,23 +162,26 @@ public class BMSONDecoder {
 						TimeLine tl = getTimeLine(n.y, resolution);
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 					} else {
+						final int key = assign[n.x - 1];
 						if (n.l > 0) {
 							// ロングノート
 							TimeLine start = getTimeLine(n.y, resolution);
 							LongNote ln = new LongNote(id, starttime, start);
-							start.setNote(n.x - 1, ln);
+							start.setNote(key, ln);
 							TimeLine end = getTimeLine(n.y + n.l, resolution);
 							ln.setEnd(end);
-							end.setNote(n.x - 1, ln);
+							ln.setDuration(end.getTime() - start.getTime());
+							end.setNote(key, ln);
+							ln.setType(n.t);
 						} else {
 							// 通常ノート
 							TimeLine tl = getTimeLine(n.y, resolution);
-							if (tl.existNote(n.x - 1)) {
+							if (tl.existNote(key)) {
 								Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
 										+ " y : " + n.y));
 							}
-							tl.setNote(n.x - 1, new NormalNote(id, starttime, duration));
+							tl.setNote(key, new NormalNote(id, starttime, duration));
 						}
 					}
 					starttime += duration;
@@ -172,12 +216,12 @@ public class BMSONDecoder {
 						tl.setPoor(new int[] { idmap.get(n.ID) });
 					}
 				}
-
 			}
 
 			Logger.getGlobal().info(
 					"BMSONファイル解析完了 :" + f.getName() + " - TimeLine数:" + model.getAllTimes().length + " 時間(ms):"
 							+ (System.currentTimeMillis() - currnttime));
+			model.setPath(f.getAbsolutePath());
 			return model;
 		} catch (JsonParseException e) {
 			// TODO 自動生成された catch ブロック

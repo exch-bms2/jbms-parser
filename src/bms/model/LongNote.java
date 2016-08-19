@@ -6,6 +6,8 @@ package bms.model;
  * @author exch
  */
 public class LongNote extends Note {
+	
+	// TODO start,endのTimeLine廃止
 
 	/**
 	 * ロングノート開始点
@@ -23,6 +25,13 @@ public class LongNote extends Note {
 	 * 終端の演奏時間
 	 */
 	private int endtime;
+	
+	private int type;
+	
+	public static final int TYPE_UNDEFINED = 0;
+	public static final int TYPE_LONGNOTE = 1;
+	public static final int TYPE_CHARGENOTE = 2;
+	public static final int TYPE_HELLCHARGENOTE = 3;
 	
 	/**
 	 * 指定のTimeLineを始点としたロングノートを作成する
@@ -45,7 +54,6 @@ public class LongNote extends Note {
 	 */
 	public void setEnd(TimeLine time) {
 		end = time;
-		this.setDuration(end.getTime() - start.getTime());
 	}
 	
 	/**
@@ -78,5 +86,13 @@ public class LongNote extends Note {
 
 	public void setEndtime(int endtime) {
 		this.endtime = endtime;
+	}
+
+	public int getType() {
+		return type;
+	}
+
+	public void setType(int type) {
+		this.type = type;
 	}
 }
