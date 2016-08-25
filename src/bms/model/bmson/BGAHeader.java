@@ -1,6 +1,6 @@
 package bms.model.bmson;
 
 public class BGAHeader {
-	public int ID;
+	public int id;
 	public String name;
 }
