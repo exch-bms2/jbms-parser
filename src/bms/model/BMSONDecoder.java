@@ -1,12 +1,12 @@
 package bms.model;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.logging.Logger;
-
-import org.apache.commons.io.IOUtils;
 
 import bms.model.bmson.*;
 import bms.model.bmson.Note;
@@ -35,7 +35,11 @@ public class BMSONDecoder {
 	private final int[] JUDGERANK = { 40, 70, 90, 100 };
 
 	public BMSModel decode(File f) {
-		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.getName());
+		return decode(f.toPath());
+	}
+
+	public BMSModel decode(Path f) {
+		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.toString());
 		log.clear();
 		tlcache.clear();
 		try {
@@ -43,9 +47,8 @@ public class BMSONDecoder {
 			// BMS読み込み、ハッシュ値取得
 			model = new BMSModel();
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			final byte[] data = IOUtils.toByteArray(new DigestInputStream(new FileInputStream(f), digest));
+			final Bmson bmson = new ObjectMapper().readValue(new DigestInputStream(Files.newInputStream(f), digest), Bmson.class);
 			model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
-			final Bmson bmson = new ObjectMapper().readValue(new ByteArrayInputStream(data), Bmson.class);
 			model.setTitle(bmson.info.title);
 			model.setSubTitle(bmson.info.subtitle);
 			model.setArtist(bmson.info.artist);
@@ -74,8 +77,8 @@ public class BMSONDecoder {
 			model.setPlaylevel(String.valueOf(bmson.info.level));
 			model.setUseKeys(7);
 			int[] assign = TimeLine.NOTEASSIGN_BEAT;
-			if(bmson.info.mode_hint != null) {
-				switch(bmson.info.mode_hint.toLowerCase()) {
+			if (bmson.info.mode_hint != null) {
+				switch (bmson.info.mode_hint.toLowerCase()) {
 				case "beat-5k":
 					model.setUseKeys(5);
 					break;
@@ -83,10 +86,10 @@ public class BMSONDecoder {
 					model.setUseKeys(7);
 					break;
 				case "beat-10k":
-					model.setUseKeys(10);					
+					model.setUseKeys(10);
 					break;
 				case "beat-14k":
-					model.setUseKeys(14);					
+					model.setUseKeys(14);
 					break;
 				case "popn-5k":
 					model.setUseKeys(9);
@@ -110,14 +113,14 @@ public class BMSONDecoder {
 			// bpmNotes, stopNotes処理
 			for (EventNote n : bmson.bpm_events) {
 				while (stoppos < bmson.stop_events.length && bmson.stop_events[stoppos].y <= n.y) {
-					TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
+					final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
 					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].v) / (tl.getBPM() * resolution)));
 					stoppos++;
 				}
 				getTimeLine(n.y, resolution).setBPM(n.v);
 			}
 			while (stoppos < bmson.stop_events.length) {
-				TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
+				final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
 				tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].v) / (tl.getBPM() * resolution)));
 				stoppos++;
 			}
@@ -126,7 +129,7 @@ public class BMSONDecoder {
 				getTimeLine(bl.y, resolution).setSectionLine(true);
 			}
 
-			List<String> wavmap = new ArrayList<String>();
+			List<String> wavmap = new ArrayList<String>(bmson.sound_channels.length);
 			int id = 0;
 			int starttime = 0;
 			for (SoundChannel sc : bmson.sound_channels) {
@@ -140,8 +143,8 @@ public class BMSONDecoder {
 				for (int i = 0; i < sc.notes.length; i++) {
 					final bms.model.bmson.Note n = sc.notes[i];
 					bms.model.bmson.Note next = null;
-					for(int j = i + 1; j < sc.notes.length; j++) {
-						if(sc.notes[j].y > n.y) {
+					for (int j = i + 1; j < sc.notes.length; j++) {
+						if (sc.notes[j].y > n.y) {
 							next = sc.notes[j];
 							break;
 						}
@@ -151,8 +154,7 @@ public class BMSONDecoder {
 						starttime = 0;
 					}
 					if (next != null && next.c) {
-						duration = getTimeLine(next.y, resolution).getTime()
-								- getTimeLine(n.y, resolution).getTime();
+						duration = getTimeLine(next.y, resolution).getTime() - getTimeLine(n.y, resolution).getTime();
 					}
 					if (n.x == 0) {
 						// BGノート
@@ -172,7 +174,7 @@ public class BMSONDecoder {
 							ln.setType(n.t);
 						} else {
 							// 通常ノート
-							TimeLine tl = getTimeLine(n.y, resolution);
+							final TimeLine tl = getTimeLine(n.y, resolution);
 							if (tl.existNote(key)) {
 								Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
@@ -185,11 +187,11 @@ public class BMSONDecoder {
 				}
 				id++;
 			}
-			model.setWavList(wavmap.toArray(new String[0]));
+			model.setWavList(wavmap.toArray(new String[wavmap.size()]));
 			// BGA処理
-			List<String> bgamap = new ArrayList<String>();
-			Map<Integer, Integer> idmap = new HashMap<Integer, Integer>();
 			if (bmson.bga != null && bmson.bga.bga_header != null) {
+				final List<String> bgamap = new ArrayList<String>(bmson.bga.bga_header.length);
+				final Map<Integer, Integer> idmap = new HashMap<Integer, Integer>(bmson.bga.bga_header.length);
 				for (int i = 0; i < bmson.bga.bga_header.length; i++) {
 					BGAHeader bh = bmson.bga.bga_header[i];
 					bgamap.add(bh.name);
@@ -213,13 +215,13 @@ public class BMSONDecoder {
 						tl.setPoor(new int[] { idmap.get(n.id) });
 					}
 				}
+				model.setBgaList(bgamap.toArray(new String[bgamap.size()]));
 			}
-			model.setBgaList(bgamap.toArray(new String[0]));
 
 			Logger.getGlobal().info(
-					"BMSONファイル解析完了 :" + f.getName() + " - TimeLine数:" + model.getAllTimes().length + " 時間(ms):"
+					"BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 							+ (System.currentTimeMillis() - currnttime));
-			model.setPath(f.getAbsolutePath());
+			model.setPath(f.toAbsolutePath().toString());
 			return model;
 		} catch (JsonParseException e) {
 			e.printStackTrace();
@@ -232,11 +234,11 @@ public class BMSONDecoder {
 		}
 		return null;
 	}
-	
-	private final Map<Integer, TimeLine> tlcache = new HashMap<Integer, TimeLine>(); 
+
+	private final Map<Integer, TimeLine> tlcache = new HashMap<Integer, TimeLine>();
 
 	private TimeLine getTimeLine(int y, float resolution) {
-		if(tlcache.containsKey(y)) {
+		if (tlcache.containsKey(y)) {
 			return tlcache.get(y);
 		}
 		double bpm = model.getBpm();
@@ -245,17 +247,17 @@ public class BMSONDecoder {
 		TimeLine[] timelines = model.getAllTimeLines();
 		for (TimeLine tl : timelines) {
 			if (tl.getSection() > y / resolution) {
-				time += (1000.0 * 60 * 4 * (y / resolution - section)) / bpm;
+				time += (240000.0 * (y / resolution - section)) / bpm;
 				break;
 			} else {
-				time += (1000.0 * 60 * 4 * (tl.getSection() - section)) / bpm;
+				time += (240000.0 * (tl.getSection() - section)) / bpm;
 				bpm = tl.getBPM();
 				section = tl.getSection();
 			}
 			time += tl.getStop();
 		}
 		if (timelines.length > 0 && timelines[timelines.length - 1].getSection() < y / resolution) {
-			time += (1000.0 * 60 * 4 * (y / resolution - section)) / bpm;
+			time += (240000.0 * (y / resolution - section)) / bpm;
 		}
 		TimeLine tl = model.getTimeLine(y / resolution, (int) time);
 		tl.setBPM(bpm);

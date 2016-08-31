@@ -1,13 +1,13 @@
 package bms.model;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Logger;
-
-import org.apache.commons.io.IOUtils;
 
 /**
  * BMSファイルをBMSModelにデコードするクラス
@@ -150,17 +150,20 @@ public class BMSDecoder {
 	}
 
 	public BMSModel decode(File f) {
-		log.clear();
-		Logger.getGlobal().info("BMSファイル解析開始 :" + f.getName());
+		return decode(f.toPath());
+	}
+
+	public BMSModel decode(Path f) {
+		Logger.getGlobal().info("BMSファイル解析開始 :" + f.toString());
 		try {
-			BMSModel model = this.decode(new FileInputStream(f), f.getName().toLowerCase().endsWith(".pms"));
+			BMSModel model = this.decode(Files.newInputStream(f), f.toString().toLowerCase().endsWith(".pms"));
 			if (model == null) {
 				return null;
 			}
-			model.setPath(f.getAbsolutePath());
-			Logger.getGlobal().info("BMSファイル解析完了 :" + f.getName() + " - TimeLine数:" + model.getAllTimes().length);
+			model.setPath(f.toAbsolutePath().toString());
+			Logger.getGlobal().info("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().length);
 			return model;
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			log.add(new DecodeLog(DecodeLog.STATE_ERROR, "BMSファイルが見つかりません"));
 			Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
 		}
@@ -175,40 +178,20 @@ public class BMSDecoder {
 	 */
 	public BMSModel decode(InputStream is, boolean ispms) {
 		log.clear();
-		long time = System.currentTimeMillis();
-		byte[] data = null;
+		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
 
 		// BMS読み込み、ハッシュ値取得
+		BufferedReader br = null;
 		try {
 			MessageDigest md5digest = MessageDigest.getInstance("MD5");
 			MessageDigest sha256digest = MessageDigest.getInstance("SHA-256");
-			data = IOUtils.toByteArray(new DigestInputStream(new DigestInputStream(is, md5digest), sha256digest));
-			model.setMD5(convertHexString(md5digest.digest()));
-			model.setSHA256(convertHexString(sha256digest.digest()));
-		} catch (NoSuchAlgorithmException | IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		if (data == null) {
-			return null;
-		}
-
-		ByteArrayInputStream bias = new ByteArrayInputStream(data);
-		BufferedReader br = null;
-		try {
 			if (ispms) {
 				model.setUseKeys(9);
 			}
 			// Logger.getGlobal().info(
 			// "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
-			br = new BufferedReader(new InputStreamReader(bias, "MS932"));
+			br = new BufferedReader(new InputStreamReader((new DigestInputStream(new DigestInputStream(is, md5digest), sha256digest)), "MS932"));
 			String line = null;
 			Map<String, String> wavmap = new HashMap<String, String>();
 			Map<String, String> bgamap = new HashMap<String, String>();
@@ -221,12 +204,12 @@ public class BMSDecoder {
 			while ((line = br.readLine()) != null) {
 				if (line.length() >= 2 && line.charAt(0) == '#') {
 					line = line.substring(1, line.length());
-					char c = line.charAt(0);
+					final char c = line.charAt(0);
 					if ('0' <= c && c <= '9') {
 						line = line.toUpperCase();
 						// 楽譜
 						try {
-							int bar_index = Integer.parseInt(line.substring(0, 3));
+							final int bar_index = Integer.parseInt(line.substring(0, 3));
 							List<String> l = lines.get(random).get(bar_index);
 							if (l == null) {
 								l = new ArrayList<String>();
@@ -240,7 +223,7 @@ public class BMSDecoder {
 						}
 					} else if (matchesReserveWord(line, "BPM")) {
 						if (line.charAt(3) == ' ') {
-							String arg = line.substring(4, line.length());
+							final String arg = line.substring(4, line.length());
 							// BPMは小数点のケースがある(FREEDOM DiVE)
 							try {
 								model.setBpm(Double.parseDouble(arg));
@@ -349,7 +332,7 @@ public class BMSDecoder {
 					if (randomln != null) {
 						ln.addAll(randomln);
 					}
-					Section newsec = new Section(model, prev, ln.toArray(new String[0]));
+					Section newsec = new Section(model, prev, ln.toArray(new String[ln.size()]));
 					sections.add(newsec);
 					prev = newsec;
 				}
@@ -363,7 +346,6 @@ public class BMSDecoder {
 			}
 			model.setSelectedIndexOfTimeLines(1);
 			model.setLntype(lntype);
-			Logger.getGlobal().info("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 			if (model.getTotal() <= 60.0) {
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "TOTALが未定義か、値が少なすぎます"));
 			}
@@ -374,6 +356,9 @@ public class BMSDecoder {
 				}
 			}
 			br.close();
+			model.setMD5(convertHexString(md5digest.digest()));
+			model.setSHA256(convertHexString(sha256digest.digest()));
+			Logger.getGlobal().info("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(DecodeLog.STATE_ERROR, "BMSファイルへのアクセスに失敗しました"));
@@ -415,7 +400,7 @@ public class BMSDecoder {
 	}
 
 	public DecodeLog[] getDecodeLog() {
-		return log.toArray(new DecodeLog[0]);
+		return log.toArray(new DecodeLog[log.size()]);
 	}
 }
 
