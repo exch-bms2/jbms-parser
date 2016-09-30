@@ -111,17 +111,17 @@ public class BMSONDecoder {
 
 			int stoppos = 0;
 			// bpmNotes, stopNotes処理
-			for (EventNote n : bmson.bpm_events) {
+			for (BpmEvent n : bmson.bpm_events) {
 				while (stoppos < bmson.stop_events.length && bmson.stop_events[stoppos].y <= n.y) {
 					final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
-					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].v) / (tl.getBPM() * resolution)));
+					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration) / (tl.getBPM() * resolution)));
 					stoppos++;
 				}
-				getTimeLine(n.y, resolution).setBPM(n.v);
+				getTimeLine(n.y, resolution).setBPM(n.bpm);
 			}
 			while (stoppos < bmson.stop_events.length) {
 				final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
-				tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].v) / (tl.getBPM() * resolution)));
+				tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration) / (tl.getBPM() * resolution)));
 				stoppos++;
 			}
 			// lines処理(小節線)
@@ -169,7 +169,8 @@ public class BMSONDecoder {
 							start.setNote(key, ln);
 							TimeLine end = getTimeLine(n.y + n.l, resolution);
 							ln.setEnd(end);
-							ln.setDuration(end.getTime() - start.getTime());
+//							ln.setDuration(end.getTime() - start.getTime());
+							ln.setDuration(duration);
 							end.setNote(key, ln);
 							ln.setType(n.t);
 						} else {
@@ -245,6 +246,11 @@ public class BMSONDecoder {
 		double time = 0;
 		double section = 0;
 		TimeLine[] timelines = model.getAllTimeLines();
+		if(timelines.length == 0) {
+			TimeLine tl = model.getTimeLine(0, 0);
+			tl.setBPM(bpm);
+			timelines = model.getAllTimeLines();
+		}
 		for (TimeLine tl : timelines) {
 			if (tl.getSection() > y / resolution) {
 				time += (240000.0 * (y / resolution - section)) / bpm;
@@ -262,6 +268,7 @@ public class BMSONDecoder {
 		TimeLine tl = model.getTimeLine(y / resolution, (int) time);
 		tl.setBPM(bpm);
 		tlcache.put(y, tl);
+//		System.out.println("y = " + y + " , bpm = " + bpm + " , time = " + tl.getTime());
 		return tl;
 	}
 }
