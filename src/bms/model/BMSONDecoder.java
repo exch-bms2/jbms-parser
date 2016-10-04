@@ -106,6 +106,12 @@ public class BMSONDecoder {
 			model.setBanner(bmson.info.banner_image);
 			model.setBackbmp(bmson.info.back_image);
 			model.setStagefile(bmson.info.eyecatch_image);
+			if(bmson.bpm_events == null) {
+				bmson.bpm_events = new BpmEvent[0];
+			}
+			if(bmson.stop_events == null) {
+				bmson.stop_events = new StopEvent[0];
+			}
 
 			final float resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
 
@@ -125,8 +131,10 @@ public class BMSONDecoder {
 				stoppos++;
 			}
 			// lines処理(小節線)
-			for (BarLine bl : bmson.lines) {
-				getTimeLine(bl.y, resolution).setSectionLine(true);
+			if(bmson.lines != null) {
+				for (BarLine bl : bmson.lines) {
+					getTimeLine(bl.y, resolution).setSectionLine(true);
+				}				
 			}
 
 			List<String> wavmap = new ArrayList<String>(bmson.sound_channels.length);

@@ -149,6 +149,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setTitle(String title) {
+		if(title == null) {
+			this.title = "";
+			return;
+		}
 		this.title = title;
 	}
 
@@ -157,6 +161,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setSubTitle(String subTitle) {
+		if(subTitle == null) {
+			this.subTitle = "";
+			return;
+		}
 		this.subTitle = subTitle;
 	}
 
@@ -165,6 +173,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setGenre(String genre) {
+		if(genre == null) {
+			this.genre = "";
+			return;
+		}
 		this.genre = genre;
 	}
 
@@ -173,6 +185,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setArtist(String artist) {
+		if(artist == null) {
+			this.artist = "";
+			return;
+		}
 		this.artist = artist;
 	}
 
@@ -181,10 +197,18 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setSubArtist(String artist) {
+		if(artist == null) {
+			this.subartist = "";
+			return;
+		}
 		this.subartist = artist;
 	}
 
 	public void setBanner(String banner) {
+		if(banner == null) {
+			this.banner = "";
+			return;
+		}
 		this.banner = banner;
 	}
 
@@ -536,15 +560,6 @@ public class BMSModel implements Comparable {
 		this.sha256 = sha256;
 	}
 
-	/**
-	 * ハッシュ値を取得する。廃止予定
-	 * 
-	 * @return
-	 */
-	public String getHash() {
-		return md5;
-	}
-
 	public void setUseKeys(int keys) {
 		usekeys = keys;
 	}
@@ -586,6 +601,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setStagefile(String stagefile) {
+		if(stagefile == null) {
+			this.stagefile = "";
+			return;
+		}
 		this.stagefile = stagefile;
 	}
 
@@ -594,6 +613,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setBackbmp(String backbmp) {
+		if(backbmp == null) {
+			this.backbmp = "";
+			return;
+		}
 		this.backbmp = backbmp;
 	}
 

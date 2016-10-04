@@ -1,5 +1,9 @@
 package bms.model.bmson;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown=true)
+
 public class BMSInfo {
 	public String title = ""; // as it is.
 	public String subtitle = ""; // self-explanatory
@@ -20,4 +24,19 @@ public class BMSInfo {
 	public String preview_music = ""; // preview music filename
 	public int resolution = 240; // pulses per quarter note
 
+	public int getJudgeRank() {
+		return judge_rank;
+	}
+	
+	public void setJudgeRank(int value) {
+		judge_rank = value;
+	}
+	
+	public double getInitBPM() {
+		return init_bpm;
+	}
+	
+	public void setInitBPM(double bpm) {
+		init_bpm = bpm;
+	}
 }

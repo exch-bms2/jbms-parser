@@ -1,5 +1,9 @@
 package bms.model.bmson;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown=true)
+
 public class Note {
 	public int x; // as lane (BGM:0 1P 1-8 2P 11-18 ?)
 	public int y; // as locate( 240BPM,1sec = 960 )
