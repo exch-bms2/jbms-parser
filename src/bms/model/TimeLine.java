@@ -80,16 +80,16 @@ public class TimeLine {
 	 */
 	public int getTotalNotes(int lntype) {
 		int count = 0;
-		for (int i = 0; i < notes.length; i++) {
-			if (notes[i] != null) {
-				if (notes[i] instanceof LongNote) {
-					final LongNote ln = (LongNote) notes[i];
+		for (Note note : notes) {
+			if (note != null) {
+				if (note instanceof LongNote) {
+					final LongNote ln = (LongNote) note;
 					if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 							|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BMSModel.LNTYPE_LONGNOTE)
 							|| ln.getStart() == this) {
 						count++;
 					}
-				} else if (notes[i] instanceof NormalNote) {
+				} else if (note instanceof NormalNote) {
 					count++;
 				}
 			}

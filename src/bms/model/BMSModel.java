@@ -92,8 +92,8 @@ public class BMSModel implements Comparable {
 	 */
 	private String[] bgamap = new String[0];
 
-	private Map<String, Double> stoptable = new HashMap<String, Double>();
-	private Map<String, Double> bpmtable = new HashMap<String, Double>();
+	private Map<String, Double> stoptable = new TreeMap<String, Double>();
+	private Map<String, Double> bpmtable = new TreeMap<String, Double>();
 
 	private String lnobj;
 
@@ -106,9 +106,8 @@ public class BMSModel implements Comparable {
 	/**
 	 * 時間とTimeLineのマッピング
 	 */
-	private Map<Float, TimeLine> timelines = new HashMap<Float, TimeLine>();
+	private Map<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
 
-	private TimeLine[] _timelines;
 	private int random;
 
 	/**
@@ -129,7 +128,6 @@ public class BMSModel implements Comparable {
 
 	public void setSelectedIndexOfTimeLines(int index) {
 		timelines = timelineList.get(index - 1);
-		_timelines = null;
 	}
 
 	public int getSelectedIndexOfTimeLines() {
@@ -276,8 +274,8 @@ public class BMSModel implements Comparable {
 	public double getMinBPM() {
 		double bpm = this.getBpm();
 		for (Map<Float, TimeLine> tll : timelineList) {
-			for (Float time : tll.keySet()) {
-				double d = tll.get(time).getBPM();
+			for (TimeLine time : tll.values()) {
+				final double d = time.getBPM();
 				bpm = (bpm <= d) ? bpm : d;
 			}
 		}
@@ -287,8 +285,8 @@ public class BMSModel implements Comparable {
 	public double getMaxBPM() {
 		double bpm = this.getBpm();
 		for (Map<Float, TimeLine> tll : timelineList) {
-			for (Float time : tll.keySet()) {
-				double d = tll.get(time).getBPM();
+			for (TimeLine time : tll.values()) {
+				final double d = time.getBPM();
 				bpm = (bpm >= d) ? bpm : d;
 			}
 		}
@@ -470,22 +468,12 @@ public class BMSModel implements Comparable {
 			tl = new TimeLine(time);
 			tl.setSection(section);
 			timelines.put(section, tl);
-			_timelines = null;
 		}
 		return tl;
 	}
 
 	public TimeLine[] getAllTimeLines() {
-		if (_timelines != null) {
-			return _timelines;
-		}
-		Float[] times = timelines.keySet().toArray(new Float[0]);
-		Arrays.sort(times);
-		_timelines = new TimeLine[times.length];
-		for (int i = 0; i < times.length; i++) {
-			_timelines[i] = timelines.get(times[i]);
-		}
-		return _timelines;
+		return timelines.values().toArray(new TimeLine[timelines.size()]);
 	}
 
 	public int[] getAllTimes() {
@@ -591,7 +579,7 @@ public class BMSModel implements Comparable {
 	public void setRandom(int random) {
 		this.random = random;
 		for (int i = random - timelineList.size(); i > 0; i--) {
-			timelineList.add(new HashMap<Float, TimeLine>());
+			timelineList.add(new TreeMap<Float, TimeLine>());
 		}
 		timelineList.set(0, timelines);
 	}

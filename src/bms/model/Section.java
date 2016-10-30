@@ -47,7 +47,7 @@ public class Section {
 	/**
 	 * BGレーン
 	 */
-	private List<String[]> auto = new ArrayList<String[]>();
+	private final List<String[]> auto = new ArrayList<String[]>();
 	/**
 	 * BGA
 	 */
@@ -116,8 +116,7 @@ public class Section {
 		if (prev != null) {
 			sectionnum = prev.sectionnum + prev.rate;
 		}
-		for (int i = 0; i < lines.length; i++) {
-			String line = lines[i];
+		for (String line : lines) {
 			int channel = 0;
 			try {
 				channel = Integer.parseInt(String.valueOf(line.charAt(3)), 16) * 10
@@ -501,7 +500,7 @@ public class Section {
 			double dt = 0.0;
 			for (int i = 0; i < s.length; i++) {
 				if (!s[i].equals("00")) {
-					TimeLine tl = model.getTimeLine(sectionnum + (float) (rate * i / s.length), base
+					final TimeLine tl = model.getTimeLine(sectionnum + (float) (rate * i / s.length), base
 							+ (int) (dt * rate));
 					if (key >= 0 && key < 18) {
 						if (tl.existNote(key % 18)) {
@@ -516,7 +515,7 @@ public class Section {
 							TimeLine[] tl2 = model.getAllTimeLines();
 							for (int t = tl2.length - 1; t >= 0; t--) {
 								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(key % 18)) {
-									Note note = tl2[t].getNote(key % 18);
+									final Note note = tl2[t].getNote(key % 18);
 									if (note instanceof NormalNote) {
 										// LNOBJの直前のノートをLNに差し替える
 										LongNote ln = new LongNote(note.getWav(), tl2[t]);
@@ -676,7 +675,7 @@ public class Section {
 						// }
 					}
 				}
-				double dd = 1000 * 60 * 4 * (1.0 / s.length - se) / nowbpm;
+				final double dd = 1000 * 60 * 4 * (1.0 / s.length - se) / nowbpm;
 				// if (dd * rate < 1.0) {
 				// Logger.getGlobal().warning(
 				// "時間軸:" + (base + (int) (dt * rate))
@@ -689,8 +688,9 @@ public class Section {
 	}
 
 	private int getId(String s, Map<String, Integer> map) {
-		if (map.containsKey(s)) {
-			return map.get(s);
+		final Integer result = map.get(s);
+		if (result != null) {
+			return result;
 		}
 		return -2;
 	}

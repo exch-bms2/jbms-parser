@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -19,7 +18,7 @@ public class BMSDecoder {
 	// TODO bug:RANDOM構文を厳密解釈する必要あり
 	// TODO 構文解析エラーログの取得
 
-	private List<CommandWord> reserve = new ArrayList<CommandWord>();
+	private final CommandWord[] reserve;
 
 	private int lntype;
 
@@ -32,6 +31,7 @@ public class BMSDecoder {
 	public BMSDecoder(int lntype) {
 		this.lntype = lntype;
 		// 予約語の登録
+		List<CommandWord> reserve = new ArrayList<CommandWord>();
 		reserve.add(new CommandWord("PLAYER") {
 			public void execute(BMSModel model, String arg) {
 				try {
@@ -147,6 +147,8 @@ public class BMSDecoder {
 				}
 			}
 		});
+		
+		this.reserve = reserve.toArray(new CommandWord[reserve.size()]);
 	}
 
 	public BMSModel decode(File f) {
@@ -299,7 +301,7 @@ public class BMSDecoder {
 				}
 			}
 			String[] wavlist = new String[wavmap.keySet().size()];
-			Map<String, Integer> wm = new HashMap<String, Integer>();
+			Map<String, Integer> wm = new TreeMap<String, Integer>();
 			int id = 0;
 			for (String key : wavmap.keySet()) {
 				wavlist[id] = wavmap.get(key);
@@ -307,7 +309,7 @@ public class BMSDecoder {
 				id++;
 			}
 			String[] bgalist = new String[bgamap.keySet().size()];
-			Map<String, Integer> bm = new HashMap<String, Integer>();
+			Map<String, Integer> bm = new TreeMap<String, Integer>();
 			id = 0;
 			for (String key : bgamap.keySet()) {
 				bgalist[id] = bgamap.get(key);
@@ -320,15 +322,18 @@ public class BMSDecoder {
 			for (int rand = 1; rand <= model.getRandom(); rand++) {
 				model.setSelectedIndexOfTimeLines(rand);
 				List<Section> sections = new ArrayList<Section>();
+				List<String> ln = new ArrayList<String>();
 				Section prev = null;
+				final Map<Integer, List<String>> commonlns = lines.get(0);
+				final Map<Integer, List<String>> randomlns = lines.get(rand);
 				for (int i = 0; i <= maxsec; i++) {
-					List<String> ln = new ArrayList<String>();
-					List<String> commonln = lines.get(0).get(i);
+					ln.clear();
+					final List<String> commonln = commonlns.get(i);
 					if (commonln != null) {
 						ln.addAll(commonln);
 					}
 
-					List<String> randomln = lines.get(rand).get(i);
+					final List<String> randomln = randomlns.get(i);
 					if (randomln != null) {
 						ln.addAll(randomln);
 					}
@@ -391,7 +396,7 @@ public class BMSDecoder {
 	 * @returnバイトデータの16進数文字列表現
 	 */
 	public static String convertHexString(byte[] data) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (byte b : data) {
 			sb.append(Character.forDigit(b >> 4 & 0xf, 16));
 			sb.append(Character.forDigit(b & 0xf, 16));
