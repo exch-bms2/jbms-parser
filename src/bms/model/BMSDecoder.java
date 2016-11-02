@@ -24,6 +24,11 @@ public class BMSDecoder {
 
 	private List<DecodeLog> log = new ArrayList<DecodeLog>();
 
+	private int lnobj;
+
+	private final int[] wm = new int[36 * 36];
+	private final int[] bm = new int[36 * 36];
+
 	public BMSDecoder() {
 		this(BMSModel.LNTYPE_LONGNOTE);
 	}
@@ -78,7 +83,7 @@ public class BMSDecoder {
 					model.setJudgerank(Integer.parseInt(arg));
 				} catch (NumberFormatException e) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#RANKに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#RANK :" + arg);
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#RANK :" + arg);
 				}
 			}
 		});
@@ -88,7 +93,7 @@ public class BMSDecoder {
 					model.setTotal(Double.parseDouble(arg));
 				} catch (NumberFormatException e) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#TOTALに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#TOTAL :" + arg);
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#TOTAL :" + arg);
 				}
 			}
 		});
@@ -98,7 +103,7 @@ public class BMSDecoder {
 					model.setVolwav(Integer.parseInt(arg));
 				} catch (NumberFormatException e) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#VOLWAVに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#VOLWAV :" + arg);
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#VOLWAV :" + arg);
 				}
 			}
 		});
@@ -114,7 +119,7 @@ public class BMSDecoder {
 		});
 		reserve.add(new CommandWord("LNOBJ") {
 			public void execute(BMSModel model, String arg) {
-				model.setLNObject(arg.toUpperCase());
+				lnobj = Integer.parseInt(arg.toUpperCase(), 36);
 			}
 		});
 		reserve.add(new CommandWord("DIFFICULTY") {
@@ -123,7 +128,7 @@ public class BMSDecoder {
 					model.setDifficulty(Integer.parseInt(arg));
 				} catch (NumberFormatException e) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#DIFFICULTYに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#DIFFICULTY :" + arg);
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#DIFFICULTY :" + arg);
 				}
 			}
 		});
@@ -143,11 +148,11 @@ public class BMSDecoder {
 					model.setRandom(Integer.parseInt(arg));
 				} catch (NumberFormatException e) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#RANDOMに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#RANDOM :" + arg);
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#RANDOM :" + arg);
 				}
 			}
 		});
-		
+
 		this.reserve = reserve.toArray(new CommandWord[reserve.size()]);
 	}
 
@@ -156,14 +161,14 @@ public class BMSDecoder {
 	}
 
 	public BMSModel decode(Path f) {
-		Logger.getGlobal().info("BMSファイル解析開始 :" + f.toString());
+		Logger.getGlobal().fine("BMSファイル解析開始 :" + f.toString());
 		try {
 			BMSModel model = this.decode(Files.newInputStream(f), f.toString().toLowerCase().endsWith(".pms"));
 			if (model == null) {
 				return null;
 			}
 			model.setPath(f.toAbsolutePath().toString());
-			Logger.getGlobal().info("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().length);
+			Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().length);
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(DecodeLog.STATE_ERROR, "BMSファイルが見つかりません"));
@@ -180,8 +185,11 @@ public class BMSDecoder {
 	 */
 	public BMSModel decode(InputStream is, boolean ispms) {
 		log.clear();
+		lnobj = -1;
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
+		Map<Integer, Double> stoptable = new TreeMap<Integer, Double>();
+		Map<Integer, Double> bpmtable = new TreeMap<Integer, Double>();
 
 		// BMS読み込み、ハッシュ値取得
 		BufferedReader br = null;
@@ -193,10 +201,11 @@ public class BMSDecoder {
 			}
 			// Logger.getGlobal().info(
 			// "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
-			br = new BufferedReader(new InputStreamReader((new DigestInputStream(new DigestInputStream(is, md5digest), sha256digest)), "MS932"));
+			br = new BufferedReader(new InputStreamReader((new DigestInputStream(new DigestInputStream(is, md5digest),
+					sha256digest)), "MS932"));
 			String line = null;
-			Map<String, String> wavmap = new HashMap<String, String>();
-			Map<String, String> bgamap = new HashMap<String, String>();
+			Map<Integer, String> wavmap = new HashMap<Integer, String>();
+			Map<Integer, String> bgamap = new HashMap<Integer, String>();
 
 			Map<Integer, Map<Integer, List<String>>> lines = new HashMap<Integer, Map<Integer, List<String>>>();
 			int random = 0;
@@ -207,8 +216,8 @@ public class BMSDecoder {
 				if (line.length() >= 2 && line.charAt(0) == '#') {
 					line = line.substring(1, line.length());
 					final char c = line.charAt(0);
-					if ('0' <= c && c <= '9') {
-						line = line.toUpperCase();
+					if ('0' <= c && c <= '9' && line.length() > 5) {
+						// line = line.toUpperCase();
 						// 楽譜
 						try {
 							final int bar_index = Integer.parseInt(line.substring(0, 3));
@@ -221,7 +230,7 @@ public class BMSDecoder {
 							maxsec = (maxsec > bar_index) ? maxsec : bar_index;
 						} catch (NumberFormatException e) {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "小節に数字が定義されていません : " + line));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:" + line);
+							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:" + line);
 						}
 					} else if (matchesReserveWord(line, "BPM")) {
 						if (line.charAt(3) == ' ') {
@@ -231,51 +240,64 @@ public class BMSDecoder {
 								model.setBpm(Double.parseDouble(arg));
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#BPMに数字が定義されていません : " + line));
-								Logger.getGlobal().warning("BMSファイルの解析中の例外:#BPM :" + arg);
+								Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#BPM :" + arg);
 							}
 						} else {
-							String id = line.substring(3, 5).toUpperCase();
+							String id = line.substring(3, 5);
 							String bpm = line.substring(6, line.length());
 							try {
-								model.putBPM(id, Double.parseDouble(bpm));
+								bpmtable.put(Integer.parseInt(id, 36), Double.parseDouble(bpm));
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#BPMxxに数字が定義されていません : " + line));
-								Logger.getGlobal().warning("BMSファイルの解析中の例外:#BPM" + id + " :" + bpm);
+								Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#BPM" + id + " :" + bpm);
 							}
 						}
 					} else if (matchesReserveWord(line, "WAV")) {
 						// 音源ファイル
 						if (line.length() >= 7) {
-							String id = line.substring(3, 5).toUpperCase();
+							String id = line.substring(3, 5);
 							String file_name = line.substring(6, line.length());
-							wavmap.put(id, file_name);
+							try {
+								wavmap.put(Integer.parseInt(id, 36), file_name);
+							} catch (NumberFormatException e) {
+								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#WAVxxは不十分な定義です : " + line));
+								Logger.getGlobal().warning(
+										model.getTitle() + ":BMSファイルの解析中の例外:#WAVxxは不正な定義です : " + line);
+							}
 						} else {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#WAVxxは不十分な定義です : " + line));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:#WAVxxは不十分な定義です : " + line);
+							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#WAVxxは不十分な定義です : " + line);
 						}
 					} else if (matchesReserveWord(line, "BMP")) {
 						// BGAファイル
 						if (line.length() >= 7) {
-							String id = line.substring(3, 5).toUpperCase();
+							String id = line.substring(3, 5);
 							String file_name = line.substring(6, line.length());
-							bgamap.put(id, file_name);
+							try {
+								bgamap.put(Integer.parseInt(id, 36), file_name);
+							} catch (NumberFormatException e) {
+								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#WAVxxは不十分な定義です : " + line));
+								Logger.getGlobal().warning(
+										model.getTitle() + ":BMSファイルの解析中の例外:#WAVxxは不正な定義です : " + line);
+							}
 						} else {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#BMPxxは不十分な定義です : " + line));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:#BMPxxは不十分な定義です : " + line);
+							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#BMPxxは不十分な定義です : " + line);
 						}
 					} else if (matchesReserveWord(line, "STOP")) {
 						if (line.length() >= 8) {
-							String id = line.substring(4, 6).toUpperCase();
+							String id = line.substring(4, 6);
 							String stop = line.substring(7, line.length());
 							try {
-								model.putStop(id, Double.parseDouble(stop) / 192);
+								stoptable.put(Integer.parseInt(id, 36), Double.parseDouble(stop) / 192);
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#STOPxxに数字が定義されていません : " + line));
-								Logger.getGlobal().warning("BMSファイルの解析中の例外:#STOP" + id + " :" + stop);
-							}							
+								Logger.getGlobal().warning(
+										model.getTitle() + ":BMSファイルの解析中の例外:#STOP" + id + " :" + stop);
+							}
 						} else {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#STOPxxは不十分な定義です : " + line));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:#STOPxxは不十分な定義です : " + line);							
+							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#STOPxxは不十分な定義です : " + line);
 						}
 					} else if (matchesReserveWord(line, "IF ")) {
 						// RANDOM分岐開始
@@ -301,19 +323,19 @@ public class BMSDecoder {
 				}
 			}
 			String[] wavlist = new String[wavmap.keySet().size()];
-			Map<String, Integer> wm = new TreeMap<String, Integer>();
+			Arrays.fill(wm, -2);
 			int id = 0;
-			for (String key : wavmap.keySet()) {
+			for (int key : wavmap.keySet()) {
 				wavlist[id] = wavmap.get(key);
-				wm.put(key, id);
+				wm[key] = id;
 				id++;
 			}
 			String[] bgalist = new String[bgamap.keySet().size()];
-			Map<String, Integer> bm = new TreeMap<String, Integer>();
+			Arrays.fill(bm, -2);
 			id = 0;
-			for (String key : bgamap.keySet()) {
+			for (int key : bgamap.keySet()) {
 				bgalist[id] = bgamap.get(key);
-				bm.put(key, id);
+				bm[key] = id;
 				id++;
 			}
 			model.setWavList(wavlist);
@@ -337,7 +359,7 @@ public class BMSDecoder {
 					if (randomln != null) {
 						ln.addAll(randomln);
 					}
-					Section newsec = new Section(model, prev, ln.toArray(new String[ln.size()]));
+					Section newsec = new Section(model, prev, ln.toArray(new String[ln.size()]), bpmtable, stoptable);
 					sections.add(newsec);
 					prev = newsec;
 				}
@@ -345,7 +367,7 @@ public class BMSDecoder {
 				// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
 
 				for (Section s : sections) {
-					s.makeTimeLines(wm, bm);
+					s.makeTimeLines(wm, bm, lnobj);
 					log.addAll(s.getDecodeLog());
 				}
 			}
@@ -363,14 +385,16 @@ public class BMSDecoder {
 			br.close();
 			model.setMD5(convertHexString(md5digest.digest()));
 			model.setSHA256(convertHexString(sha256digest.digest()));
-			Logger.getGlobal().info("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
+			Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(DecodeLog.STATE_ERROR, "BMSファイルへのアクセスに失敗しました"));
-			Logger.getGlobal().severe("BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+			Logger.getGlobal().severe(
+					model.getTitle() + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 		} catch (Exception e) {
 			log.add(new DecodeLog(DecodeLog.STATE_ERROR, "何らかの異常によりBMS解析に失敗しました"));
-			Logger.getGlobal().severe("BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+			Logger.getGlobal().severe(
+					model.getTitle() + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 			e.printStackTrace();
 		} finally {
 			if (br != null) {

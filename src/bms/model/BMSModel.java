@@ -92,11 +92,6 @@ public class BMSModel implements Comparable {
 	 */
 	private String[] bgamap = new String[0];
 
-	private Map<String, Double> stoptable = new TreeMap<String, Double>();
-	private Map<String, Double> bpmtable = new TreeMap<String, Double>();
-
-	private String lnobj;
-
 	private int lntype;
 
 	public static final int LNTYPE_LONGNOTE = 0;
@@ -255,22 +250,6 @@ public class BMSModel implements Comparable {
 		this.volwav = volwav;
 	}
 
-	public void putStop(String id, double time) {
-		stoptable.put(id, time);
-	}
-
-	public Double getStop(String id) {
-		return stoptable.get(id);
-	}
-
-	public void putBPM(String id, double bpm) {
-		bpmtable.put(id, bpm);
-	}
-
-	public Double getBPM(String id) {
-		return bpmtable.get(id);
-	}
-
 	public double getMinBPM() {
 		double bpm = this.getBpm();
 		for (Map<Float, TimeLine> tll : timelineList) {
@@ -291,14 +270,6 @@ public class BMSModel implements Comparable {
 			}
 		}
 		return bpm;
-	}
-
-	public void setLNObject(String id) {
-		lnobj = id;
-	}
-
-	public String getLNObject() {
-		return lnobj;
 	}
 
 	/**

@@ -39,7 +39,7 @@ public class BMSONDecoder {
 	}
 
 	public BMSModel decode(Path f) {
-		Logger.getGlobal().info("BMSONファイル解析開始 :" + f.toString());
+		Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.toString());
 		log.clear();
 		tlcache.clear();
 		try {
@@ -148,10 +148,11 @@ public class BMSONDecoder {
 						return n1.y - n2.y;
 					}
 				});
-				for (int i = 0; i < sc.notes.length; i++) {
+				final int length = sc.notes.length;
+				for (int i = 0 ; i < length; i++) {
 					final bms.model.bmson.Note n = sc.notes[i];
 					bms.model.bmson.Note next = null;
-					for (int j = i + 1; j < sc.notes.length; j++) {
+					for (int j = i + 1; j < length; j++) {
 						if (sc.notes[j].y > n.y) {
 							next = sc.notes[j];
 							break;
@@ -199,11 +200,11 @@ public class BMSONDecoder {
 			model.setWavList(wavmap.toArray(new String[wavmap.size()]));
 			// BGA処理
 			if (bmson.bga != null && bmson.bga.bga_header != null) {
-				final List<String> bgamap = new ArrayList<String>(bmson.bga.bga_header.length);
+				final String[] bgamap = new String[bmson.bga.bga_header.length];
 				final Map<Integer, Integer> idmap = new HashMap<Integer, Integer>(bmson.bga.bga_header.length);
 				for (int i = 0; i < bmson.bga.bga_header.length; i++) {
 					BGAHeader bh = bmson.bga.bga_header[i];
-					bgamap.add(bh.name);
+					bgamap[i] = bh.name;
 					idmap.put(bh.id, i);
 				}
 				if (bmson.bga.bga_events != null) {
@@ -224,10 +225,10 @@ public class BMSONDecoder {
 						tl.setPoor(new int[] { idmap.get(n.id) });
 					}
 				}
-				model.setBgaList(bgamap.toArray(new String[bgamap.size()]));
+				model.setBgaList(bgamap);
 			}
 
-			Logger.getGlobal().info(
+			Logger.getGlobal().fine(
 					"BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 							+ (System.currentTimeMillis() - currnttime));
 			model.setPath(f.toAbsolutePath().toString());
@@ -244,11 +245,12 @@ public class BMSONDecoder {
 		return null;
 	}
 
-	private final Map<Integer, TimeLine> tlcache = new HashMap<Integer, TimeLine>();
+	private final Map<Integer, TimeLine> tlcache = new TreeMap<Integer, TimeLine>();
 
 	private TimeLine getTimeLine(int y, float resolution) {
-		if (tlcache.containsKey(y)) {
-			return tlcache.get(y);
+		final TimeLine tlc = tlcache.get(y);
+		if (tlc != null) {
+			return tlc;
 		}
 		double bpm = model.getBpm();
 		double time = 0;

@@ -47,66 +47,68 @@ public class Section {
 	/**
 	 * BGレーン
 	 */
-	private final List<String[]> auto = new ArrayList<String[]>();
+	private final int[][] auto;
 	/**
 	 * BGA
 	 */
-	private String[] bga = new String[0];
+	private int[] bga;
 	/**
 	 * レイヤー
 	 */
-	private String[] layer = new String[0];
+	private int[] layer;
 	/**
 	 * POORアニメーション
 	 */
-	private String[] poor = new String[0];
+	private int[] poor = new int[0];
 	/**
 	 * 1P通常ノート
 	 */
-	private String[][] play_1 = new String[9][0];
+	private int[][] play_1 = new int[9][];
 	/**
 	 * 1P不可視ノート
 	 */
-	private String[][] play_1_invisible = new String[9][0];
+	private int[][] play_1_invisible = new int[9][];
 	/**
 	 * 1Pロングノート
 	 */
-	private String[][] play_1_ln = new String[9][0];
+	private int[][] play_1_ln = new int[9][];
 	/**
 	 * 1P地雷ノート
 	 */
-	private String[][] play_1_mine = new String[9][0];
+	private int[][] play_1_mine = new int[9][];
 	/**
 	 * 2P通常ノート
 	 */
-	private String[][] play_2 = new String[9][0];
+	private int[][] play_2 = new int[9][];
 	/**
 	 * 2P不可視ノート
 	 */
-	private String[][] play_2_invisible = new String[9][0];
+	private int[][] play_2_invisible = new int[9][];
 	/**
 	 * 2Pロングノート
 	 */
-	private String[][] play_2_ln = new String[9][0];
+	private int[][] play_2_ln = new int[9][];
 	/**
 	 * 2P地雷ノート
 	 */
-	private String[][] play_2_mine = new String[9][0];
+	private int[][] play_2_mine = new int[9][];
 	/**
 	 * 前の小節
 	 */
-	private Section prev;
+	private final Section prev;
 
 	private int usekeys = 5;
 
-	private BMSModel model;
+	private final BMSModel model;
 
 	private float sectionnum;
 
 	private List<DecodeLog> log = new ArrayList();
 
-	public Section(BMSModel model, Section prev, String[] lines) {
+	public Section(BMSModel model, Section prev, String[] lines, Map<Integer, Double> bpmtable,
+			Map<Integer, Double> stoptable) {
 		this.model = model;
+		final  List<int[]> auto = new ArrayList<int[]>();
 		if (model.getUseKeys() == 9) {
 			usekeys = 9;
 		} else {
@@ -123,7 +125,7 @@ public class Section {
 						+ Integer.parseInt(String.valueOf(line.charAt(4)), 16);
 			} catch (NumberFormatException e) {
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "チャンネル定義が無効です : " + line));
-				Logger.getGlobal().warning("BMSファイルの解析中の例外:チャンネル定義が無効です - " + line);
+				Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:チャンネル定義が無効です - " + line);
 			}
 			switch (channel) {
 			// BGレーン
@@ -138,11 +140,11 @@ public class Section {
 				break;
 			// BPM変化
 			case BPM_CHANGE:
-				String[] datas = this.splitData(line);
+				int[] datas = this.splitData(line);
 				double[] d = new double[datas.length];
 				for (int j = 0; j < datas.length; j++) {
-					if (!datas[j].equals("00")) {
-						d[j] = (double) Integer.parseInt(datas[j], 16);
+					if (datas[j] != 0) {
+						d[j] = (double) (datas[j] / 36) * 16 + (datas[j] % 36);
 					} else {
 						d[j] = 0;
 					}
@@ -163,16 +165,16 @@ public class Section {
 				break;
 			// BPM変化(拡張)
 			case BPM_CHANGE_EXTEND:
-				String[] bpmdatas = this.splitData(line);
+				int[] bpmdatas = this.splitData(line);
 				double[] d2 = new double[bpmdatas.length];
 				for (int j = 0; j < bpmdatas.length; j++) {
-					if (!bpmdatas[j].equals("00")) {
-						Double bpm = model.getBPM(bpmdatas[j]);
+					if (bpmdatas[j] != 0) {
+						Double bpm = bpmtable.get(bpmdatas[j]);
 						if (bpm != null) {
 							d2[j] = bpm;
 						} else {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "未定義のBPM変化を参照しています : " + bpmdatas[j]));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:未定義のBPM変化を参照しています :  " + bpmdatas[j]);
+							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:未定義のBPM変化を参照しています :  " + bpmdatas[j]);
 							d2[j] = 0;
 						}
 					} else {
@@ -183,16 +185,16 @@ public class Section {
 				break;
 			// ストップシーケンス
 			case STOP:
-				String[] stopdatas = this.splitData(line);
+				int[] stopdatas = this.splitData(line);
 				stop = new double[stopdatas.length];
 				for (int j = 0; j < stopdatas.length; j++) {
-					if (!stopdatas[j].equals("00")) {
-						Double st = model.getStop(stopdatas[j]);
+					if (stopdatas[j] != 0) {
+						Double st = stoptable.get(stopdatas[j]);
 						if (st != null) {
 							stop[j] = st;
 						} else {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "未定義のSTOPを参照しています : " + stopdatas[j]));
-							Logger.getGlobal().warning("BMSファイルの解析中の例外:未定義のSTOPを参照しています :  " + stopdatas[j]);
+							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:未定義のSTOPを参照しています :  " + stopdatas[j]);
 							stop[j] = 0;
 						}
 					} else {
@@ -219,14 +221,15 @@ public class Section {
 			this.convert(channel, P2_MINE_KEY_BASE, play_2_mine, line);
 		}
 		if (auto.size() == 0) {
-			auto.add(new String[] { "00" });
+			auto.add(new int[] { 0 });
 		}
+		this.auto = auto.toArray(new int[auto.size()][]);
 		if (model.getUseKeys() < usekeys) {
 			model.setUseKeys(usekeys);
 		}
 	}
 
-	private void convert(int channel, int ch, String[][] notes, String line) {
+	private void convert(int channel, int ch, int[][] notes, String line) {
 		if (ch <= channel && channel <= ch + 8) {
 			channel -= ch;
 			if (channel == 5 || channel == 6) {
@@ -275,34 +278,42 @@ public class Section {
 	 * @param b
 	 *            マージするノーツ
 	 */
-	private String[] mergeData(String[] a, String[] b) {
+	private int[] mergeData(int[] a, int[] b) {
 		if (a == null || a.length == 0) {
 			return b;
 		}
+		if (b == null || b.length == 0) {
+			return a;
+		}
 		int d = (a.length % b.length == 0 ? b.length : (b.length % a.length == 0 ? a.length : 1));
-		String[] result = new String[a.length * b.length / d];
-		Arrays.fill(result, "00");
+		int[] result = new int[a.length * b.length / d];
+		Arrays.fill(result, 0);
 		for (int i = 0; i < a.length; i++) {
-			if (!a[i].equals("00")) {
+			if (a[i] != 0) {
 				result[i * b.length / d] = a[i];
 			}
 		}
 		for (int i = 0; i < b.length; i++) {
-			if (!b[i].equals("00")) {
+			if (b[i] != 0) {
 				result[i * a.length / d] = b[i];
 			}
 		}
 		return result;
 	}
 
-	private String[] splitData(String line) {
-		line = line.substring(line.indexOf(":") + 1, line.length());
-		int split = line.length() / 2;
-		String[] result = new String[split];
-		for (int i = 0; i < split; i++) {
-			result[i] = line.substring(i * 2, i * 2 + 2);
+	private int[] splitData(String line) {
+		final int findex = line.indexOf(":") + 1;
+		final int lindex = line.length();
+		final int split = (lindex - findex) / 2;
+		int[] result = new int[split];
+		try {
+			for (int i = 0; i < split; i++) {
+				result[i] = Integer.parseInt(line.substring(findex + i * 2, findex + i * 2 + 2), 36);
+			}
+		} catch(NumberFormatException e) {
+			Logger.getGlobal().warning(model.getTitle() + ":チャンネル定義中の不正な値:" + line);
 		}
-		return result;
+		return result;			
 	}
 
 	public double getSectionRate() {
@@ -377,75 +388,81 @@ public class Section {
 	/**
 	 * 小節開始時のLN状態(キャッシュ)
 	 */
-	private String[] _lnstatus = null;
+	private int[] _lnstatus = null;
 
 	/**
 	 * 小節開始時のLN状態を取得する
 	 * 
 	 * @return
 	 */
-	private String[] getStartLNStatus() {
+	private int[] getStartLNStatus() {
 		if (_lnstatus != null) {
 			return _lnstatus;
 		}
 		if (prev != null) {
-			_lnstatus = new String[18];
-			String[] result = prev.getStartLNStatus();
+			_lnstatus = new int[18];
+			int[] result = prev.getStartLNStatus();
 			for (int i = 0; i < 9; i++) {
-				String nowln = result[i];
-				for (int j = 0; j < prev.play_1_ln[i].length; j++) {
-					if (!prev.play_1_ln[i][j].equals("00")) {
-						if (nowln == null) {
-							nowln = prev.play_1_ln[i][j];
-						} else if (nowln.equals(prev.play_1_ln[i][j])) {
-							nowln = null;
-						} else {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
-									+ prev.play_1_ln[i][j]));
-							Logger.getGlobal().warning(
-									model.getTitle() + "はLNの対応が取れていません:" + nowln + " - " + prev.play_1_ln[i][j]);
-							nowln = null;
+				int nowln = result[i];
+				final int[] play1 = prev.play_1_ln[i];
+				if(play1 != null) {
+					final int play1length = play1.length;
+					for (int j = 0; j < play1length; j++) {
+						if (play1[j] != 0) {
+							if (nowln == 0) {
+								nowln = play1[j];
+							} else if (nowln == play1[j]) {
+								nowln = 0;
+							} else {
+								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
+										+ play1[j]));
+								Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play1[j]);
+								nowln = 0;
+							}
 						}
-					}
+					}					
 				}
 				_lnstatus[i] = nowln;
 
 				nowln = result[i + 9];
-				for (int j = 0; j < prev.play_2_ln[i].length; j++) {
-					if (!prev.play_2_ln[i][j].equals("00")) {
-						if (nowln == null) {
-							nowln = prev.play_2_ln[i][j];
-						} else if (nowln.equals(prev.play_2_ln[i][j])) {
-							nowln = null;
-						} else {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
-									+ prev.play_2_ln[i][j]));
-							Logger.getGlobal().warning(
-									model.getTitle() + "はLNの対応が取れていません:" + nowln + " - " + prev.play_2_ln[i][j]);
-							nowln = null;
+				final int[] play2 = prev.play_2_ln[i];
+				if(play2 != null) {
+					final int play2length = play2.length;
+					for (int j = 0; j < play2length; j++) {
+						if (play2[j] != 0) {
+							if (nowln == 0) {
+								nowln = play2[j];
+							} else if (nowln == play2[j]) {
+								nowln = 0;
+							} else {
+								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
+										+ play2[j]));
+								Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play2[j]);
+								nowln = 0;
+							}
 						}
-					}
+					}					
 				}
 				_lnstatus[i + 9] = nowln;
 			}
 			return _lnstatus;
 		}
-		return new String[18];
+		return new int[18];
 	}
 
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(Map<String, Integer> wavmap, Map<String, Integer> bgamap) {
+	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj) {
 		final int base = this.getStartTime();
-		final String[] startln = this.getStartLNStatus().clone();
+		final int[] startln = this.getStartLNStatus().clone();
 		// 小節線追加
 		model.getTimeLine(sectionnum, base).setSectionLine(true);
 		model.getTimeLine(sectionnum, base).setBPM(this.getStartBPM());
 		final int[] poors = new int[poor.length];
 		for (int i = 0; i < poors.length; i++) {
-			if (bgamap.get(poor[i]) != null) {
-				poors[i] = bgamap.get(poor[i]);
+			if (bgamap[poor[i]] != -2) {
+				poors[i] = bgamap[poor[i]];
 			} else {
 				poors[i] = -1;
 			}
@@ -471,8 +488,9 @@ public class Section {
 		}
 		final Double[] st = (Double[]) l.toArray(new Double[l.size()]);
 		// 通常ノート配置
-		for (int key = 0; key < 74 + auto.size(); key++) {
-			String[] s = null;
+		final int size = 74 + auto.length;
+		for (int key = 0; key < size; key++) {
+			int[] s = null;
 			if (key >= 0 && key < 9) {
 				s = this.play_1[key % 9];
 			} else if (key >= 9 && key < 18) {
@@ -494,23 +512,27 @@ public class Section {
 			} else if (key == 73) {
 				s = this.layer;
 			} else if (key >= 74) {
-				s = this.auto.get(key - 74);
+				s = this.auto[key - 74];
+			}
+			if(s == null) {
+				continue;
 			}
 			double nowbpm = this.getStartBPM();
 			double dt = 0.0;
-			for (int i = 0; i < s.length; i++) {
-				if (!s[i].equals("00")) {
-					final TimeLine tl = model.getTimeLine(sectionnum + (float) (rate * i / s.length), base
+			final int slength = s.length;
+			for (int i = 0; i < slength; i++) {
+				if (s[i] != 0) {
+					final TimeLine tl = model.getTimeLine(sectionnum + (float) (rate * i / slength), base
 							+ (int) (dt * rate));
 					if (key >= 0 && key < 18) {
 						if (tl.existNote(key % 18)) {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
 									+ (base + (int) (dt * rate))));
 							Logger.getGlobal().warning(
-									model.getTitle() + "の通常ノート追加時に衝突が発生しました。" + (key + 1) + ":"
+									model.getTitle() + ":通常ノート追加時に衝突が発生しました。" + (key + 1) + ":"
 											+ (base + (int) (dt * rate)));
 						}
-						if (s[i].equals(model.getLNObject())) {
+						if (s[i] == lnobj) {
 							// LN終端処理
 							TimeLine[] tl2 = model.getAllTimeLines();
 							for (int t = tl2.length - 1; t >= 0; t--) {
@@ -529,7 +551,7 @@ public class Section {
 												"LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + key + " - Time(ms):"
 														+ tl2[t].getTime()));
 										Logger.getGlobal().warning(
-												model.getTitle() + "はLNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン:" + key
+												model.getTitle() + ":LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン:" + key
 														+ " - Time(ms):" + tl2[t].getTime());
 										((LongNote) note).setEnd(tl);
 										tl.setNote(key % 18, note);
@@ -539,7 +561,7 @@ public class Section {
 										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
 												+ " - Time(ms):" + tl2[t].getTime()));
 										Logger.getGlobal().warning(
-												model.getTitle() + "はLNオブジェクトの対応が取れません。レーン:" + key + " - Time(ms):"
+												model.getTitle() + ":LNオブジェクトの対応が取れません。レーン:" + key + " - Time(ms):"
 														+ tl2[t].getTime());
 										tl.setBPM(nowbpm);
 										break;
@@ -547,7 +569,7 @@ public class Section {
 								}
 							}
 						} else {
-							tl.setNote(key % 18, new NormalNote(getId(s[i], wavmap)));
+							tl.setNote(key % 18, new NormalNote(wavmap[s[i]]));
 							tl.setBPM(nowbpm);
 						}
 					} else if (key >= 18 && key < 36) {
@@ -556,13 +578,13 @@ public class Section {
 						// + (key - 17) + ":"
 						// + (base + (int) (dt * rate)));
 
-						tl.setHiddenNote(key % 18, new NormalNote(getId(s[i], wavmap)));
+						tl.setHiddenNote(key % 18, new NormalNote(wavmap[s[i]]));
 
 						tl.setBPM(nowbpm);
 					} else if (key >= 36 && key < 54) {
 						// LN処理
-						if (startln[key % 18] == null) {
-							tl.setNote(key % 18, new LongNote(getId(s[i], wavmap), tl));
+						if (startln[key % 18] == 0) {
+							tl.setNote(key % 18, new LongNote(wavmap[s[i]], tl));
 							tl.setBPM(nowbpm);
 							startln[key % 18] = s[i];
 						} else {
@@ -575,13 +597,13 @@ public class Section {
 										((LongNote) note).setEnd(tl);
 										tl.setNote(key % 18, note);
 										tl.setBPM(nowbpm);
-										startln[key % 18] = null;
+										startln[key % 18] = 0;
 										break;
 									} else {
 										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LN内に通常ノートが存在します。レーン: "
 												+ (key - 35) + " - Time(ms):" + tl2[t].getTime()));
 										Logger.getGlobal().warning(
-												model.getTitle() + "はLN内に通常ノートが存在します!" + (key - 35) + ":"
+												model.getTitle() + ":LN内に通常ノートが存在します!" + (key - 35) + ":"
 														+ tl2[t].getTime());
 									}
 								}
@@ -593,19 +615,19 @@ public class Section {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "地雷ノート追加時に衝突が発生しました : " + (key - 53) + ":"
 									+ (base + (int) (dt * rate))));
 							Logger.getGlobal().warning(
-									model.getTitle() + "の地雷ノート追加時に衝突が発生しました。" + (key - 53) + ":"
+									model.getTitle() + ":地雷ノート追加時に衝突が発生しました。" + (key - 53) + ":"
 											+ (base + (int) (dt * rate)));
 						}
-						tl.setNote(key % 18, new MineNote(getId("00", wavmap), Integer.parseInt(s[i], 36)));
+						tl.setNote(key % 18, new MineNote(wavmap[0], s[i]));
 						tl.setBPM(nowbpm);
 					} else if (key == 72) {
-						tl.setBGA(getId(s[i], bgamap));
+						tl.setBGA(bgamap[s[i]]);
 						tl.setBPM(nowbpm);
 					} else if (key == 73) {
-						tl.setLayer(getId(s[i], bgamap));
+						tl.setLayer(bgamap[s[i]]);
 						tl.setBPM(nowbpm);
 					} else if (key >= 74) {
-						tl.addBackGroundNote(new NormalNote(getId(s[i], wavmap)));
+						tl.addBackGroundNote(new NormalNote(wavmap[s[i]]));
 						tl.setBPM(nowbpm);
 					}
 				}
@@ -613,12 +635,12 @@ public class Section {
 				double se = 0.0;
 				for (int j = 0; j < bk.length; j++) {
 					// タイムラインにbpm変化を反映
-					if (bk[j] >= (double) i / s.length && bk[j] < (double) (i + 1) / s.length) {
+					if (bk[j] >= (double) i / slength && bk[j] < (double) (i + 1) / slength) {
 						for (int k = 0; k < st.length; k++) {
 							// ストップ
-							if (st[k] >= (double) i / s.length + se && st[k] < bk[j]) {
-								dt += 1000 * 60 * 4 * (st[k] - (double) i / s.length - se) / nowbpm;
-								se = st[k] - (double) i / s.length;
+							if (st[k] >= (double) i / slength + se && st[k] < bk[j]) {
+								dt += 1000 * 60 * 4 * (st[k] - (double) i / slength - se) / nowbpm;
+								se = st[k] - (double) i / slength;
 								model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
 										.setBPM(nowbpm);
 								model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
@@ -632,8 +654,8 @@ public class Section {
 								dt += stop.get(st[k]) * (1000 * 60 * 4 / nowbpm) / rate;
 							}
 						}
-						dt += 1000 * 60 * 4 * (bk[j] - (double) i / s.length - se) / nowbpm;
-						se = bk[j] - (double) i / s.length;
+						dt += 1000 * 60 * 4 * (bk[j] - (double) i / slength - se) / nowbpm;
+						se = bk[j] - (double) i / slength;
 						nowbpm = bpmchange.get(bk[j]);
 						// if (model.getTimeLine(base + (int) (dt * rate))
 						// .getBPM() != nowbpm) {
@@ -653,9 +675,9 @@ public class Section {
 				}
 				for (int k = 0; k < st.length; k++) {
 					// ストップ
-					if (st[k] >= (double) i / s.length + se && st[k] < (double) (i + 1) / s.length) {
-						dt += 1000 * 60 * 4 * (st[k] - (double) i / s.length - se) / nowbpm;
-						se = st[k] - (double) i / s.length;
+					if (st[k] >= (double) i / slength + se && st[k] < (double) (i + 1) / slength) {
+						dt += 1000 * 60 * 4 * (st[k] - (double) i / slength - se) / nowbpm;
+						se = st[k] - (double) i / slength;
 						model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate)).setBPM(
 								nowbpm);
 						model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate)).setStop(
@@ -675,7 +697,7 @@ public class Section {
 						// }
 					}
 				}
-				final double dd = 1000 * 60 * 4 * (1.0 / s.length - se) / nowbpm;
+				final double dd = 1000 * 60 * 4 * (1.0 / slength - se) / nowbpm;
 				// if (dd * rate < 1.0) {
 				// Logger.getGlobal().warning(
 				// "時間軸:" + (base + (int) (dt * rate))
@@ -685,14 +707,6 @@ public class Section {
 				dt += dd;
 			}
 		}
-	}
-
-	private int getId(String s, Map<String, Integer> map) {
-		final Integer result = map.get(s);
-		if (result != null) {
-			return result;
-		}
-		return -2;
 	}
 
 	public List<DecodeLog> getDecodeLog() {
