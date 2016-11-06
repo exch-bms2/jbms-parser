@@ -400,54 +400,59 @@ public class Section {
 			return _lnstatus;
 		}
 		if (prev != null) {
-			_lnstatus = new int[18];
-			int[] result = prev.getStartLNStatus();
-			for (int i = 0; i < 9; i++) {
-				int nowln = result[i];
-				final int[] play1 = prev.play_1_ln[i];
-				if(play1 != null) {
-					final int play1length = play1.length;
-					for (int j = 0; j < play1length; j++) {
-						if (play1[j] != 0) {
-							if (nowln == 0) {
-								nowln = play1[j];
-							} else if (nowln == play1[j]) {
-								nowln = 0;
-							} else {
-								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
-										+ play1[j]));
-								Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play1[j]);
-								nowln = 0;
-							}
-						}
-					}					
-				}
-				_lnstatus[i] = nowln;
-
-				nowln = result[i + 9];
-				final int[] play2 = prev.play_2_ln[i];
-				if(play2 != null) {
-					final int play2length = play2.length;
-					for (int j = 0; j < play2length; j++) {
-						if (play2[j] != 0) {
-							if (nowln == 0) {
-								nowln = play2[j];
-							} else if (nowln == play2[j]) {
-								nowln = 0;
-							} else {
-								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
-										+ play2[j]));
-								Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play2[j]);
-								nowln = 0;
-							}
-						}
-					}					
-				}
-				_lnstatus[i + 9] = nowln;
-			}
+			_lnstatus = getEndLNStatus(prev);
 			return _lnstatus;
 		}
 		return new int[18];
+	}
+	
+	protected int[] getEndLNStatus(Section sec) {
+		int[] _lnstatus = new int[18];
+		int[] result = sec.getStartLNStatus();
+		for (int i = 0; i < 9; i++) {
+			int nowln = result[i];
+			final int[] play1 = sec.play_1_ln[i];
+			if(play1 != null) {
+				final int play1length = play1.length;
+				for (int j = 0; j < play1length; j++) {
+					if (play1[j] != 0) {
+						if (nowln == 0) {
+							nowln = play1[j];
+						} else if (nowln == play1[j]) {
+							nowln = 0;
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
+									+ play1[j]));
+							Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play1[j]);
+							nowln = 0;
+						}
+					}
+				}					
+			}
+			_lnstatus[i] = nowln;
+
+			nowln = result[i + 9];
+			final int[] play2 = sec.play_2_ln[i];
+			if(play2 != null) {
+				final int play2length = play2.length;
+				for (int j = 0; j < play2length; j++) {
+					if (play2[j] != 0) {
+						if (nowln == 0) {
+							nowln = play2[j];
+						} else if (nowln == play2[j]) {
+							nowln = 0;
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
+									+ play2[j]));
+							Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play2[j]);
+							nowln = 0;
+						}
+					}
+				}					
+			}
+			_lnstatus[i + 9] = nowln;
+		}
+		return _lnstatus;
 	}
 
 	/**

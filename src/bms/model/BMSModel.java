@@ -103,12 +103,7 @@ public class BMSModel implements Comparable {
 	 */
 	private Map<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
 
-	private int random;
-
-	/**
-	 * TimeLineリスト
-	 */
-	private List<Map<Float, TimeLine>> timelineList = new ArrayList<Map<Float, TimeLine>>();
+	private int[] random;
 
 	public static final int TOTALNOTES_ALL = 0;
 	public static final int TOTALNOTES_KEY = 1;
@@ -118,15 +113,6 @@ public class BMSModel implements Comparable {
 	public static final int TOTALNOTES_MINE = 5;
 
 	public BMSModel() {
-		setRandom(1);
-	}
-
-	public void setSelectedIndexOfTimeLines(int index) {
-		timelines = timelineList.get(index - 1);
-	}
-
-	public int getSelectedIndexOfTimeLines() {
-		return timelineList.indexOf(timelines) + 1;
 	}
 
 	public int getPlayer() {
@@ -142,7 +128,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setTitle(String title) {
-		if(title == null) {
+		if (title == null) {
 			this.title = "";
 			return;
 		}
@@ -154,7 +140,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setSubTitle(String subTitle) {
-		if(subTitle == null) {
+		if (subTitle == null) {
 			this.subTitle = "";
 			return;
 		}
@@ -166,7 +152,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setGenre(String genre) {
-		if(genre == null) {
+		if (genre == null) {
 			this.genre = "";
 			return;
 		}
@@ -178,7 +164,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setArtist(String artist) {
-		if(artist == null) {
+		if (artist == null) {
 			this.artist = "";
 			return;
 		}
@@ -190,7 +176,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setSubArtist(String artist) {
-		if(artist == null) {
+		if (artist == null) {
 			this.subartist = "";
 			return;
 		}
@@ -198,7 +184,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setBanner(String banner) {
-		if(banner == null) {
+		if (banner == null) {
 			this.banner = "";
 			return;
 		}
@@ -252,22 +238,18 @@ public class BMSModel implements Comparable {
 
 	public double getMinBPM() {
 		double bpm = this.getBpm();
-		for (Map<Float, TimeLine> tll : timelineList) {
-			for (TimeLine time : tll.values()) {
-				final double d = time.getBPM();
-				bpm = (bpm <= d) ? bpm : d;
-			}
+		for (TimeLine time : timelines.values()) {
+			final double d = time.getBPM();
+			bpm = (bpm <= d) ? bpm : d;
 		}
 		return bpm;
 	}
 
 	public double getMaxBPM() {
 		double bpm = this.getBpm();
-		for (Map<Float, TimeLine> tll : timelineList) {
-			for (TimeLine time : tll.values()) {
-				final double d = time.getBPM();
-				bpm = (bpm >= d) ? bpm : d;
-			}
+		for (TimeLine time : timelines.values()) {
+			final double d = time.getBPM();
+			bpm = (bpm >= d) ? bpm : d;
 		}
 		return bpm;
 	}
@@ -543,16 +525,12 @@ public class BMSModel implements Comparable {
 		this.bgamap = bgamap;
 	}
 
-	public int getRandom() {
+	public int[] getRandom() {
 		return random;
 	}
 
-	public void setRandom(int random) {
+	public void setRandom(int[] random) {
 		this.random = random;
-		for (int i = random - timelineList.size(); i > 0; i--) {
-			timelineList.add(new TreeMap<Float, TimeLine>());
-		}
-		timelineList.set(0, timelines);
 	}
 
 	public String getStagefile() {
@@ -560,7 +538,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setStagefile(String stagefile) {
-		if(stagefile == null) {
+		if (stagefile == null) {
 			this.stagefile = "";
 			return;
 		}
@@ -572,7 +550,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public void setBackbmp(String backbmp) {
-		if(backbmp == null) {
+		if (backbmp == null) {
 			this.backbmp = "";
 			return;
 		}
