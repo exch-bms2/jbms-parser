@@ -17,7 +17,6 @@ import sun.misc.IOUtils;
  */
 public class BMSDecoder {
 
-	// TODO bug:RANDOM構文を厳密解釈する必要あり
 	// TODO 構文解析エラーログの取得
 
 	private final CommandWord[] reserve;
@@ -91,6 +90,11 @@ public class BMSDecoder {
 				}
 			}
 		});
+		reserve.add(new CommandWord("DEFEXRANK") {
+			public void execute(BMSModel model, String arg) {
+				// TODO 未実装
+			}
+		});
 		reserve.add(new CommandWord("TOTAL") {
 			public void execute(BMSModel model, String arg) {
 				try {
@@ -144,6 +148,11 @@ public class BMSDecoder {
 		reserve.add(new CommandWord("BANNER") {
 			public void execute(BMSModel model, String arg) {
 				model.setBanner(arg);
+			}
+		});
+		reserve.add(new CommandWord("COMMENT") {
+			public void execute(BMSModel model, String arg) {
+				// TODO 未実装
 			}
 		});
 
@@ -206,10 +215,10 @@ public class BMSDecoder {
 
 			List<Integer> randoms = new ArrayList<Integer>();
 			List<Integer> srandoms = new ArrayList<Integer>();
-			int crandom = 0;
+			List<Integer> crandom = new ArrayList<Integer>();
 			int maxsec = 0;
 
-			boolean skip = false;
+			List<Boolean> skip = new ArrayList<Boolean>();
 			while ((line = br.readLine()) != null) {
 				if (line.length() >= 2 && line.charAt(0) == '#') {
 					line = line.substring(1, line.length());
@@ -219,10 +228,10 @@ public class BMSDecoder {
 							final int r = Integer.parseInt(line.substring(7, line.length()));
 							randoms.add(r);
 							if (random != null) {
-								crandom = random[randoms.size() - 1];
+								crandom.add(random[randoms.size() - 1]);
 							} else {
-								crandom = (int) (Math.random() * r) + 1;
-								srandoms.add(crandom);
+								crandom.add((int) (Math.random() * r) + 1);
+								srandoms.add(crandom.get(crandom.size() - 1));
 							}
 						} catch (NumberFormatException e) {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#RANDOMに数字が定義されていません"));
@@ -233,12 +242,26 @@ public class BMSDecoder {
 
 					if (matchesReserveWord(line, "IF")) {
 						// RANDOM分岐開始
-						skip = (crandom != Integer.parseInt(line.substring(3, line.length())));
+						skip.add((crandom.get(crandom.size() - 1) != Integer.parseInt(line.substring(3, line.length()))));
 					} else if (matchesReserveWord(line, "ENDIF")) {
-						skip = false;
+						if(skip.size() > 0) {
+							skip.remove(skip.size() - 1);							
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "ENDIFに対応するIFが存在しません: " + line));
+							Logger.getGlobal().warning(model.getTitle() + ":ENDIFに対応するIFが存在しません:" + line);							
+						}
 					}
 
-					if (!skip) {
+					if (matchesReserveWord(line, "ENDRANDOM")) {
+						if(crandom.size() > 0) {
+							crandom.remove(crandom.size() - 1);
+						} else {
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "ENDRANDOMに対応するRANDOMが存在しません: " + line));
+							Logger.getGlobal().warning(model.getTitle() + ":ENDRANDOMに対応するRANDOMが存在しません:" + line);							
+						}
+					}
+
+					if (skip.size() == 0 || !skip.get(skip.size() - 1)) {
 						final char c = line.charAt(0);
 						if ('0' <= c && c <= '9' && line.length() > 5) {
 							// line = line.toUpperCase();
