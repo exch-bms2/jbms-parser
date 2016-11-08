@@ -8,16 +8,12 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.logging.Logger;
 
-import sun.misc.IOUtils;
-
 /**
  * BMSファイルをBMSModelにデコードするクラス
  * 
  * @author exch
  */
 public class BMSDecoder {
-
-	// TODO 構文解析エラーログの取得
 
 	private final CommandWord[] reserve;
 
@@ -408,7 +404,7 @@ public class BMSDecoder {
 					final TimeLine[] tl = model.getAllTimeLines();
 					for(int index = tl.length - 1;index >= 0;index--) {
 						final Note n = tl[index].getNote(i);
-						if(n != null && n instanceof LongNote && ((LongNote)n).getEnd() == null) {
+						if(n != null && n instanceof LongNote && ((LongNote)n).getEndnote().getSection() == 0f) {
 							tl[index].setNote(i, null);
 							break;
 						}

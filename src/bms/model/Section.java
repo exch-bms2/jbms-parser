@@ -103,7 +103,7 @@ public class Section {
 
 	private float sectionnum;
 
-	private List<DecodeLog> log = new ArrayList();
+	private List<DecodeLog> log = new ArrayList<DecodeLog>();
 
 	public Section(BMSModel model, Section prev, String[] lines, Map<Integer, Double> bpmtable,
 			Map<Integer, Double> stoptable) {
@@ -545,20 +545,18 @@ public class Section {
 									final Note note = tl2[t].getNote(key % 18);
 									if (note instanceof NormalNote) {
 										// LNOBJの直前のノートをLNに差し替える
-										LongNote ln = new LongNote(note.getWav(), tl2[t]);
-										ln.setEnd(tl);
+										LongNote ln = new LongNote(note.getWav());
 										tl2[t].setNote(key % 18, ln);
 										tl.setNote(key % 18, ln);
 										tl.setBPM(nowbpm);
 										break;
-									} else if (note instanceof LongNote && ((LongNote) note).getStart() == tl2[t]) {
+									} else if (note instanceof LongNote && ((LongNote) note).getSection() == tl2[t].getSection()) {
 										log.add(new DecodeLog(DecodeLog.STATE_WARNING,
 												"LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + key + " - Time(ms):"
 														+ tl2[t].getTime()));
 										Logger.getGlobal().warning(
 												model.getTitle() + ":LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン:" + key
 														+ " - Time(ms):" + tl2[t].getTime());
-										((LongNote) note).setEnd(tl);
 										tl.setNote(key % 18, note);
 										tl.setBPM(nowbpm);
 										break;
@@ -589,7 +587,7 @@ public class Section {
 					} else if (key >= 36 && key < 54) {
 						// LN処理
 						if (startln[key % 18] == 0) {
-							tl.setNote(key % 18, new LongNote(wavmap[s[i]], tl));
+							tl.setNote(key % 18, new LongNote(wavmap[s[i]]));
 							tl.setBPM(nowbpm);
 							startln[key % 18] = s[i];
 						} else {
@@ -599,9 +597,11 @@ public class Section {
 								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(key % 18)) {
 									Note note = tl2[t].getNote(key % 18);
 									if (note instanceof LongNote) {
-										((LongNote) note).setEnd(tl);
 										tl.setNote(key % 18, note);
 										tl.setBPM(nowbpm);
+										if(startln[key % 18] != s[i]) {
+											((LongNote)note).getEndnote().setWav(wavmap[s[i]]);
+										}
 										startln[key % 18] = 0;
 										break;
 									} else {

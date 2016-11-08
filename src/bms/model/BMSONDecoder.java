@@ -174,10 +174,9 @@ public class BMSONDecoder {
 						if (n.l > 0) {
 							// ロングノート
 							TimeLine start = getTimeLine(n.y, resolution);
-							LongNote ln = new LongNote(id, starttime, start);
+							LongNote ln = new LongNote(id, starttime);
 							start.setNote(key, ln);
 							TimeLine end = getTimeLine(n.y + n.l, resolution);
-							ln.setEnd(end);
 //							ln.setDuration(end.getTime() - start.getTime());
 							ln.setDuration(duration);
 							end.setNote(key, ln);

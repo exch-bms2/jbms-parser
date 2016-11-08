@@ -7,24 +7,7 @@ package bms.model;
  */
 public class LongNote extends Note {
 	
-	// TODO start,endのTimeLine廃止
-
-	/**
-	 * ロングノート開始点
-	 */
-	private TimeLine start;
-	/**
-	 * ロングノート終了点
-	 */
-	private TimeLine end;
-	/**
-	 * 終端の状態
-	 */
-	private int endstate;
-	/**
-	 * 終端の演奏時間
-	 */
-	private int endtime;
+	private Note endnote = new NormalNote(-2);
 	
 	private int type;
 	
@@ -37,57 +20,15 @@ public class LongNote extends Note {
 	 * 指定のTimeLineを始点としたロングノートを作成する
 	 * @param start
 	 */
-	public LongNote(int wav,TimeLine start) {
-		this.start = start;
+	public LongNote(int wav) {
 		this.setWav(wav);
 	}
 	
-	public LongNote(int wav,int starttime, TimeLine start) {
-		this.start = start;
+	public LongNote(int wav,int starttime) {
 		this.setStarttime(starttime);
 		this.setWav(wav);
 	}
 	
-	/**
-	 * ロングノートの終点を設定する
-	 * @param time
-	 */
-	public void setEnd(TimeLine time) {
-		end = time;
-	}
-	
-	/**
-	 * ロングノートの始点を取得する
-	 * @return
-	 */
-	public TimeLine getStart() {
-		return start;
-	}
-	
-	/**
-	 * ロングノートの終点を取得する
-	 * @return
-	 */
-	public TimeLine getEnd() {
-		return end;
-	}
-
-	public int getEndstate() {
-		return endstate;
-	}
-
-	public void setEndstate(int endstate) {
-		this.endstate = endstate;
-	}
-
-	public int getEndtime() {
-		return endtime;
-	}
-
-	public void setEndtime(int endtime) {
-		this.endtime = endtime;
-	}
-
 	public int getType() {
 		return type;
 	}
@@ -95,4 +36,21 @@ public class LongNote extends Note {
 	public void setType(int type) {
 		this.type = type;
 	}
+
+	public Note getEndnote() {
+		return endnote;
+	}
+
+	public void setEndnote(Note endnote) {
+		this.endnote = endnote;
+	}
+
+	@Override
+	public Object clone() {
+		LongNote ln = (LongNote) super.clone();
+		ln.endnote = (Note) endnote.clone();
+		return ln;
+	}
+	
+	
 }

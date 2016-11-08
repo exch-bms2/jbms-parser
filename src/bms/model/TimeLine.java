@@ -8,6 +8,9 @@ import java.util.*;
  * @author exch
  */
 public class TimeLine {
+	
+	// TODO レーン数の可変化
+	
 	/**
 	 * タイムラインの時間(ms)
 	 */
@@ -86,7 +89,7 @@ public class TimeLine {
 					final LongNote ln = (LongNote) note;
 					if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 							|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BMSModel.LNTYPE_LONGNOTE)
-							|| ln.getStart() == this) {
+							|| ln.getSection() == section) {
 						count++;
 					}
 				} else if (note instanceof NormalNote) {
@@ -116,6 +119,16 @@ public class TimeLine {
 
 	public void setNote(int lane, Note note) {
 		notes[lane] = note;
+		if(note == null) {
+			return;
+		}
+		if(note instanceof LongNote && ((LongNote)note).getSection() != 0f && ((LongNote)note).getSection() != section) {
+			((LongNote)note).getEndnote().setSection(section);
+			((LongNote)note).getEndnote().setSectiontime(time);			
+		} else {
+			note.setSection(section);
+			note.setSectiontime(time);
+		}
 	}
 
 	public void setHiddenNote(int lane, Note note) {

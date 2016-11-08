@@ -352,7 +352,7 @@ public class BMSModel implements Comparable {
 							if (ln.getType() == LongNote.TYPE_CHARGENOTE
 									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
-									|| ln.getStart() == tl) {
+									|| ln.getSection() == tl.getSection()) {
 								count++;
 							}
 						}
@@ -372,7 +372,7 @@ public class BMSModel implements Comparable {
 							if (ln.getType() == LongNote.TYPE_CHARGENOTE
 									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
-									|| ln.getStart() == tl) {
+									|| ln.getSection() == tl.getSection()) {
 								count++;
 							}
 						}

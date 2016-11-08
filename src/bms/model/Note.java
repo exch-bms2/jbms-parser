@@ -6,6 +6,15 @@ package bms.model;
  * @author exch
  */
 public abstract class Note implements Cloneable {
+	
+	/**
+	 * ノートが配置されている小節
+	 */
+	private float section;
+	/**
+	 * ノートが配置されている時間
+	 */
+	private int sectiontime;
 
 	/**
 	 * アサインされている 音源ID
@@ -68,6 +77,22 @@ public abstract class Note implements Cloneable {
 		this.time = time;
 	}
 
+	public float getSection() {
+		return section;
+	}
+
+	public void setSection(float section) {
+		this.section = section;
+	}
+
+	public int getSectiontime() {
+		return sectiontime;
+	}
+
+	public void setSectiontime(int sectiontime) {
+		this.sectiontime = sectiontime;
+	}
+
 	@Override
 	public Object clone() {
 		try {
@@ -75,7 +100,5 @@ public abstract class Note implements Cloneable {
 		} catch (CloneNotSupportedException e) {
 		}
 		return null;
-	}
-
-	
+	}	
 }
