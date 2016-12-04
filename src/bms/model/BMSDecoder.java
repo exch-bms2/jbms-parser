@@ -113,12 +113,12 @@ public class BMSDecoder {
 		});
 		reserve.add(new CommandWord("STAGEFILE") {
 			public void execute(BMSModel model, String arg) {
-				model.setStagefile(arg);
+				model.setStagefile(arg.replace('\\', '/'));
 			}
 		});
 		reserve.add(new CommandWord("BACKBMP") {
 			public void execute(BMSModel model, String arg) {
-				model.setBackbmp(arg);
+				model.setBackbmp(arg.replace('\\', '/'));
 			}
 		});
 		reserve.add(new CommandWord("LNOBJ") {
@@ -138,12 +138,12 @@ public class BMSDecoder {
 		});
 		reserve.add(new CommandWord("BACKBMP") {
 			public void execute(BMSModel model, String arg) {
-				model.setBackbmp(arg);
+				model.setBackbmp(arg.replace('\\', '/'));
 			}
 		});
 		reserve.add(new CommandWord("BANNER") {
 			public void execute(BMSModel model, String arg) {
-				model.setBanner(arg);
+				model.setBanner(arg.replace('\\', '/'));
 			}
 		});
 		reserve.add(new CommandWord("COMMENT") {
@@ -421,6 +421,16 @@ public class BMSDecoder {
 				if (times[times.length - 1] >= model.getLastTime() + 30000) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "最後のノート定義から30秒以上の余白があります"));
 				}
+			}
+			if(model.getPlayer() > 1 && model.getUseKeys() <= 7) {
+				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
+				Logger.getGlobal().warning(
+						model.getTitle() + ":#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません");
+			}
+			if(model.getPlayer() == 1 && model.getUseKeys() >= 10) {
+				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
+				Logger.getGlobal().warning(
+						model.getTitle() + ":#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します");
 			}
 			br.close();
 			model.setMD5(convertHexString(md5digest.digest()));

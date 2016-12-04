@@ -112,7 +112,7 @@ public class Section {
 		if (model.getUseKeys() == 9) {
 			usekeys = 9;
 		} else {
-			usekeys = model.getPlayer() > 1 ? 10 : 5;
+			usekeys = 5;
 		}
 		this.prev = prev;
 		if (prev != null) {
@@ -240,7 +240,17 @@ public class Section {
 				}
 				channel -= 2;
 			}
-			notes[channel] = this.mergeData(notes[channel], this.splitData(line));
+			
+			int[] split = this.splitData(line);
+			if((usekeys == 5 || usekeys == 7) && (ch == P2_KEY_BASE || ch == P2_INVISIBLE_KEY_BASE || ch == P2_LONG_KEY_BASE || ch ==P2_MINE_KEY_BASE)) {
+				for(int i : split) {
+					if(i != 0) {
+						usekeys = usekeys * 2;
+						break;
+					}
+				}
+			}
+			notes[channel] = this.mergeData(notes[channel], split);
 		}
 	}
 
