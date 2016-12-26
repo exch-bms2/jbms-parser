@@ -67,6 +67,23 @@ public class TimeLine {
 		return time;
 	}
 
+	protected void setTime(int time) {
+		this.time = time;
+		for(Note n : notes) {
+			if(n != null) {
+				n.setSectiontime(time);
+			}
+		}
+		for(Note n : hiddennotes) {
+			if(n != null) {
+				n.setSectiontime(time);
+			}
+		}
+		for(Note n : bgnotes) {
+			n.setSectiontime(time);
+		}
+	}
+
 	/**
 	 * タイムライン上の総ノート数を返す
 	 * 
@@ -222,6 +239,19 @@ public class TimeLine {
 
 	public void setSection(float section) {
 		this.section = section;
+		for(Note n : notes) {
+			if(n != null) {
+				n.setSection(section);
+			}
+		}
+		for(Note n : hiddennotes) {
+			if(n != null) {
+				n.setSection(section);
+			}
+		}
+		for(Note n : bgnotes) {
+			n.setSection(section);
+		}
 	}
 
 	public int getStop() {

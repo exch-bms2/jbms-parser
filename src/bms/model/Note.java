@@ -1,5 +1,8 @@
 package bms.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * ノート
  * 
@@ -36,6 +39,8 @@ public abstract class Note implements Cloneable {
 	 * ノーツの演奏時間
 	 */
 	private int time;
+
+	private List<Note> notes = new ArrayList();
 
 	public int getWav() {
 		return wav;
@@ -91,6 +96,14 @@ public abstract class Note implements Cloneable {
 
 	public void setSectiontime(int sectiontime) {
 		this.sectiontime = sectiontime;
+	}
+
+	public void addLayeredNote(Note n) {
+		notes.add(n);
+	}
+
+	public List<Note> getLayeredNotes() {
+		return notes;
 	}
 
 	@Override

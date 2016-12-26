@@ -14,6 +14,7 @@ import bms.model.bmson.Note;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.LongNode;
 
 /**
  * bmsonデコーダー
@@ -178,22 +179,38 @@ public class BMSONDecoder {
 						if (n.l > 0) {
 							// ロングノート
 							TimeLine start = getTimeLine(n.y, resolution);
-							LongNote ln = new LongNote(id, starttime);
-							start.setNote(key, ln);
 							TimeLine end = getTimeLine(n.y + n.l, resolution);
-							// ln.setDuration(end.getTime() - start.getTime());
+							LongNote ln = new LongNote(id, starttime);
 							ln.setDuration(duration);
-							end.setNote(key, ln);
-							ln.setType(n.t);
+							if(start.getNote(key) != null) {
+								bms.model.Note en = start.getNote(key);
+								if(en instanceof LongNote && end.getNote(key) == en) {
+									en.addLayeredNote(en);
+								} else {
+									Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
+									log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
+											+ " y : " + n.y));
+								}
+							} else {
+								start.setNote(key, ln);
+								// ln.setDuration(end.getTime() - start.getTime());
+								end.setNote(key, ln);
+								ln.setType(n.t);
+							}
 						} else {
 							// 通常ノート
 							final TimeLine tl = getTimeLine(n.y, resolution);
 							if (tl.existNote(key)) {
-								Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
-										+ " y : " + n.y));
+								if(tl.getNote(key) instanceof NormalNote) {
+									tl.getNote(key).addLayeredNote(new NormalNote(id, starttime, duration));
+								} else {
+									Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
+									log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
+											+ " y : " + n.y));
+								}
+							} else {
+								tl.setNote(key, new NormalNote(id, starttime, duration));
 							}
-							tl.setNote(key, new NormalNote(id, starttime, duration));
 						}
 					}
 					starttime += duration;

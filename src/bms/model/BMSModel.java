@@ -607,4 +607,12 @@ public class BMSModel implements Comparable {
 		return false;
 	}
 
+	public void setFrequency(float freq) {
+		bpm = bpm * freq;
+		for (TimeLine tl : this.getAllTimeLines()) {
+			tl.setBPM(tl.getBPM() * freq);
+			tl.setStop((int) (tl.getStop() / freq));
+			tl.setTime((int) (tl.getTime() / freq));
+		}
+	}
 }
