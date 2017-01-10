@@ -332,7 +332,7 @@ public class BMSModel implements Comparable {
 		}
 
 		int count = 0;
-		for (TimeLine tl : this.getAllTimeLines()) {
+		for (TimeLine tl : timelines.values()) {
 			if (tl.getTime() >= start && tl.getTime() < end) {
 				switch (type) {
 				case TOTALNOTES_ALL:
@@ -367,8 +367,9 @@ public class BMSModel implements Comparable {
 					break;
 				case TOTALNOTES_LONG_SCRATCH:
 					for (int lane : slane) {
-						if (tl.existNote(lane) && (tl.getNote(lane) instanceof LongNote)) {
-							LongNote ln = (LongNote) tl.getNote(lane);
+						final Note n = tl.getNote(lane);
+						if (n instanceof LongNote) {
+							final LongNote ln = (LongNote) n;
 							if (ln.getType() == LongNote.TYPE_CHARGENOTE
 									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
@@ -418,8 +419,7 @@ public class BMSModel implements Comparable {
 	public TimeLine getTimeLine(float section, int time) {
 		TimeLine tl = timelines.get(section);
 		if (tl == null) {
-			tl = new TimeLine(time);
-			tl.setSection(section);
+			tl = new TimeLine(section, time);
 			timelines.put(section, tl);
 		}
 		return tl;
@@ -574,7 +574,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsUndefinedLongNote() {
-		for (TimeLine tl : this.getAllTimeLines()) {
+		for (TimeLine tl : timelines.values()) {
 			for (int i = 0; i < 18; i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote
 						&& ((LongNote) tl.getNote(i)).getType() == LongNote.TYPE_UNDEFINED) {
@@ -586,7 +586,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsLongNote() {
-		for (TimeLine tl : this.getAllTimeLines()) {
+		for (TimeLine tl : timelines.values()) {
 			for (int i = 0; i < 18; i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
 					return true;
@@ -597,7 +597,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsMineNote() {
-		for (TimeLine tl : this.getAllTimeLines()) {
+		for (TimeLine tl : timelines.values()) {
 			for (int i = 0; i < 18; i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
 					return true;
@@ -609,7 +609,7 @@ public class BMSModel implements Comparable {
 
 	public void setFrequency(float freq) {
 		bpm = bpm * freq;
-		for (TimeLine tl : this.getAllTimeLines()) {
+		for (TimeLine tl : timelines.values()) {
 			tl.setBPM(tl.getBPM() * freq);
 			tl.setStop((int) (tl.getStop() / freq));
 			tl.setTime((int) (tl.getTime() / freq));

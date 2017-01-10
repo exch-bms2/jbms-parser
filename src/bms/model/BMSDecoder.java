@@ -221,7 +221,7 @@ public class BMSDecoder {
 					// RANDOM制御系
 					if (matchesReserveWord(line, "RANDOM")) {
 						try {
-							final int r = Integer.parseInt(line.substring(7, line.length()));
+							final int r = Integer.parseInt(line.substring(7).trim());
 							randoms.add(r);
 							if (random != null) {
 								crandom.add(random[randoms.size() - 1]);
@@ -238,7 +238,7 @@ public class BMSDecoder {
 
 					if (matchesReserveWord(line, "IF")) {
 						// RANDOM分岐開始
-						skip.add((crandom.get(crandom.size() - 1) != Integer.parseInt(line.substring(3, line.length()))));
+						skip.add((crandom.get(crandom.size() - 1) != Integer.parseInt(line.substring(3).trim())));
 					} else if (matchesReserveWord(line, "ENDIF")) {
 						if(skip.size() > 0) {
 							skip.remove(skip.size() - 1);							
@@ -277,7 +277,7 @@ public class BMSDecoder {
 							}
 						} else if (matchesReserveWord(line, "BPM")) {
 							if (line.charAt(3) == ' ') {
-								final String arg = line.substring(4, line.length());
+								final String arg = line.substring(4).trim();
 								// BPMは小数点のケースがある(FREEDOM DiVE)
 								try {
 									model.setBpm(Double.parseDouble(arg));
@@ -287,7 +287,7 @@ public class BMSDecoder {
 								}
 							} else {
 								String id = line.substring(3, 5);
-								String bpm = line.substring(6, line.length());
+								String bpm = line.substring(6).trim();
 								try {
 									bpmtable.put(Integer.parseInt(id, 36), Double.parseDouble(bpm));
 								} catch (NumberFormatException e) {
@@ -300,7 +300,7 @@ public class BMSDecoder {
 							// 音源ファイル
 							if (line.length() >= 7) {
 								final String id = line.substring(3, 5);
-								final String file_name = line.substring(6, line.length()).replace('\\', '/');
+								final String file_name = line.substring(6).trim().replace('\\', '/');
 								try {
 									wavmap.put(Integer.parseInt(id, 36), file_name);
 								} catch (NumberFormatException e) {
@@ -317,7 +317,7 @@ public class BMSDecoder {
 							// BGAファイル
 							if (line.length() >= 7) {
 								final String id = line.substring(3, 5);
-								final String file_name = line.substring(6, line.length()).replace('\\', '/');
+								final String file_name = line.substring(6).trim().replace('\\', '/');
 								try {
 									bgamap.put(Integer.parseInt(id, 36), file_name);
 								} catch (NumberFormatException e) {
@@ -333,7 +333,7 @@ public class BMSDecoder {
 						} else if (matchesReserveWord(line, "STOP")) {
 							if (line.length() >= 8) {
 								String id = line.substring(4, 6);
-								String stop = line.substring(7, line.length());
+								String stop = line.substring(7).trim();
 								try {
 									stoptable.put(Integer.parseInt(id, 36), Double.parseDouble(stop) / 192);
 								} catch (NumberFormatException e) {
@@ -349,11 +349,7 @@ public class BMSDecoder {
 						} else {
 							for (CommandWord cw : reserve) {
 								if (line.toUpperCase().matches(cw.str + "\\s.+")) {
-									String arg = line.substring(cw.str.length() + 1);
-									while (arg.length() > 0 && arg.charAt(arg.length() - 1) == ' ') {
-										arg = arg.substring(0, arg.length() - 1);
-									}
-									cw.execute(model, arg);
+									cw.execute(model, line.substring(cw.str.length() + 1).trim());
 									break;
 								}
 							}

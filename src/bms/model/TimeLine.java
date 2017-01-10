@@ -22,14 +22,14 @@ public class TimeLine {
 	/**
 	 * タイムライン上に配置されている16レーン分(+フリースクラッチ)のノート。配置されていないレーンにはnullを入れる。
 	 */
-	private Note[] notes = new Note[18];
+	private Note[] notes;
 
 	public static final int[] NOTEASSIGN_BEAT = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 };
 	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
 	/**
 	 * タイムライン上に配置されている16レーン分(+フリースクラッチ)の不可視ノート。配置されていないレーンにはnullを入れる。
 	 */
-	private Note[] hiddennotes = new Note[18];
+	private Note[] hiddennotes;
 	/**
 	 * タイムライン上に配置されているBGMノート
 	 */
@@ -61,6 +61,19 @@ public class TimeLine {
 
 	public TimeLine(int time) {
 		this.time = time;
+		notes = new Note[18];
+		hiddennotes = new Note[18];
+	}
+
+	public TimeLine(float section, int time) {
+		this(section, time, 18);
+	}
+
+	public TimeLine(float section, int time, int notesize) {
+		this.section = section;
+		this.time = time;
+		notes = new Note[notesize];
+		hiddennotes = new Note[notesize];
 	}
 
 	public int getTime() {
@@ -174,7 +187,7 @@ public class TimeLine {
 	}
 
 	public Note[] getBackGroundNotes() {
-		return bgnotes.toArray(new Note[0]);
+		return bgnotes.toArray(new Note[bgnotes.size()]);
 	}
 
 	public void setBPM(double bpm) {
