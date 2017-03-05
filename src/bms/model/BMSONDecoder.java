@@ -32,7 +32,7 @@ public class BMSONDecoder {
 		this.lntype = lntype;
 	}
 
-	private final int[] JUDGERANK = { 40, 70, 90, 100 };
+	private final int[] JUDGERANK = { 40, 60, 80, 100, 120 };
 
 	public BMSModel decode(File f) {
 		return decode(f.toPath());
@@ -64,7 +64,7 @@ public class BMSONDecoder {
 			model.setSubArtist(subartist.toString());
 			model.setGenre(bmson.info.genre);
 			model.setJudgerank(bmson.info.judge_rank);
-			if (model.getJudgerank() < 4) {
+			if (model.getJudgerank() < 5) {
 				int oldjudgerank = model.getJudgerank();
 				if (model.getJudgerank() < 0) {
 					model.setJudgerank(100);

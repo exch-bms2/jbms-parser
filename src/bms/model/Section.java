@@ -318,7 +318,7 @@ public class Section {
 		int[] result = new int[split];
 		try {
 			for (int i = 0; i < split; i++) {
-				result[i] = Integer.parseInt(line.substring(findex + i * 2, findex + i * 2 + 2), 36);
+				result[i] = BMSDecoder.parseInt36(line, findex + i * 2);
 			}
 		} catch(NumberFormatException e) {
 			Logger.getGlobal().warning(model.getTitle() + ":チャンネル定義中の不正な値:" + line);

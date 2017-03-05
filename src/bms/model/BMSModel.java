@@ -66,7 +66,7 @@ public class BMSModel implements Comparable {
 	/**
 	 * 判定ランク
 	 */
-	private int judgerank = 4;
+	private int judgerank = 2;
 	/**
 	 * TOTAL値
 	 */
