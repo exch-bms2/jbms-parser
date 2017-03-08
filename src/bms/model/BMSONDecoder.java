@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author exch
  */
 public class BMSONDecoder {
-
+	
+	private final ObjectMapper mapper = new ObjectMapper();
+	
 	private BMSModel model;
 
 	private int lntype;
@@ -47,7 +49,7 @@ public class BMSONDecoder {
 			// BMS読み込み、ハッシュ値取得
 			model = new BMSModel();
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			final Bmson bmson = new ObjectMapper().readValue(
+			final Bmson bmson = mapper.readValue(
 					new DigestInputStream(new BufferedInputStream(Files.newInputStream(f)), digest), Bmson.class);
 			model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
 			model.setTitle(bmson.info.title);

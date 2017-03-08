@@ -1,10 +1,6 @@
 package bms.model;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -101,13 +97,14 @@ public class Section {
 
 	private final BMSModel model;
 
-	private float sectionnum;
+	private final float sectionnum;
 
-	private List<DecodeLog> log = new ArrayList<DecodeLog>();
+	private final List<DecodeLog> log;
 
 	public Section(BMSModel model, Section prev, String[] lines, Map<Integer, Double> bpmtable,
-			Map<Integer, Double> stoptable) {
+			Map<Integer, Double> stoptable, List<DecodeLog> log) {
 		this.model = model;
+		this.log = log;
 		final  List<int[]> auto = new ArrayList<int[]>();
 		if (model.getUseKeys() == 9) {
 			usekeys = 9;
@@ -117,12 +114,30 @@ public class Section {
 		this.prev = prev;
 		if (prev != null) {
 			sectionnum = prev.sectionnum + prev.rate;
+		} else {
+			sectionnum = 0;
 		}
 		for (String line : lines) {
 			int channel = 0;
 			try {
-				channel = Integer.parseInt(String.valueOf(line.charAt(3)), 16) * 10
-						+ Integer.parseInt(String.valueOf(line.charAt(4)), 16);
+				final char c1 = line.charAt(4);
+				if (c1 >= '0' && c1 <= '9') {
+					channel = (c1 - '0') * 10;
+				} else if (c1 >= 'a' && c1 <= 'z') {
+					channel = ((c1 - 'a') + 10) * 10;
+				} else if (c1 >= 'A' && c1 <= 'Z') {
+					channel = ((c1 - 'A') + 10) * 10;
+				} else {
+					throw new NumberFormatException();
+				}
+
+				final char c2 = line.charAt(5);
+				if (c2 >= '0' && c2 <= '9') {
+					channel += (c2 - '0');
+				} else {
+					throw new NumberFormatException();
+				}
+
 			} catch (NumberFormatException e) {
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "チャンネル定義が無効です : " + line));
 				Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:チャンネル定義が無効です - " + line);
@@ -228,7 +243,7 @@ public class Section {
 			model.setUseKeys(usekeys);
 		}
 	}
-
+	
 	private void convert(int channel, int ch, int[][] notes, String line) {
 		if (ch <= channel && channel <= ch + 8) {
 			channel -= ch;
@@ -484,44 +499,40 @@ public class Section {
 		}
 		model.getTimeLine(sectionnum, base).setPoor(poors);
 		// BPM変化。ストップシーケンステーブル準備
-		final Map<Double, Double> bpmchange = new HashMap<Double, Double>();
-		final Map<Double, Double> stop = new HashMap<Double, Double>();
-		final List<Double> l = new ArrayList<Double>();
+		final Map<Double, Double> bpmchange = new TreeMap<Double, Double>();
+		final Map<Double, Double> stop = new TreeMap<Double, Double>();
 		for (int i = 0; i < bpm_change.length; i++) {
 			if (bpm_change[i] != 0.0) {
 				bpmchange.put((double) i / bpm_change.length, bpm_change[i]);
-				l.add((double) i / bpm_change.length);
 			}
 		}
-		final Double[] bk = (Double[]) l.toArray(new Double[l.size()]);
-		l.clear();
+		final Double[] bk = bpmchange.keySet().toArray(new Double[bpmchange.size()]);;
 		for (int i = 0; i < this.stop.length; i++) {
 			if (this.stop[i] != 0.0) {
 				stop.put((double) i / this.stop.length, this.stop[i]);
-				l.add((double) i / this.stop.length);
 			}
 		}
-		final Double[] st = (Double[]) l.toArray(new Double[l.size()]);
+		final Double[] st = stop.keySet().toArray(new Double[stop.size()]);
 		// 通常ノート配置
 		final int size = 74 + auto.length;
 		for (int key = 0; key < size; key++) {
 			int[] s = null;
 			if (key >= 0 && key < 9) {
-				s = this.play_1[key % 9];
+				s = this.play_1[key];
 			} else if (key >= 9 && key < 18) {
-				s = this.play_2[key % 9];
+				s = this.play_2[key - 9];
 			} else if (key >= 18 && key < 27) {
-				s = this.play_1_invisible[key % 9];
+				s = this.play_1_invisible[key - 18];
 			} else if (key >= 27 && key < 36) {
-				s = this.play_2_invisible[key % 9];
+				s = this.play_2_invisible[key - 27];
 			} else if (key >= 36 && key < 45) {
-				s = this.play_1_ln[key % 9];
+				s = this.play_1_ln[key - 36];
 			} else if (key >= 45 && key < 54) {
-				s = this.play_2_ln[key % 9];
+				s = this.play_2_ln[key - 45];
 			} else if (key >= 54 && key < 63) {
-				s = this.play_1_mine[key % 9];
+				s = this.play_1_mine[key - 54];
 			} else if (key >= 63 && key < 72) {
-				s = this.play_2_mine[key % 9];
+				s = this.play_2_mine[key - 63];
 			} else if (key == 72) {
 				s = this.bga;
 			} else if (key == 73) {
@@ -540,7 +551,7 @@ public class Section {
 					final TimeLine tl = model.getTimeLine(sectionnum + (float) (rate * i / slength), base
 							+ (int) (dt * rate));
 					if (key >= 0 && key < 18) {
-						if (tl.existNote(key % 18)) {
+						if (tl.existNote(key)) {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
 									+ (base + (int) (dt * rate))));
 							Logger.getGlobal().warning(
@@ -551,13 +562,13 @@ public class Section {
 							// LN終端処理
 							TimeLine[] tl2 = model.getAllTimeLines();
 							for (int t = tl2.length - 1; t >= 0; t--) {
-								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(key % 18)) {
-									final Note note = tl2[t].getNote(key % 18);
+								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(key)) {
+									final Note note = tl2[t].getNote(key);
 									if (note instanceof NormalNote) {
 										// LNOBJの直前のノートをLNに差し替える
 										LongNote ln = new LongNote(note.getWav());
-										tl2[t].setNote(key % 18, ln);
-										tl.setNote(key % 18, ln);
+										tl2[t].setNote(key, ln);
+										tl.setNote(key, ln);
 										tl.setBPM(nowbpm);
 										break;
 									} else if (note instanceof LongNote && ((LongNote) note).getSection() == tl2[t].getSection()) {
@@ -567,7 +578,7 @@ public class Section {
 										Logger.getGlobal().warning(
 												model.getTitle() + ":LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン:" + key
 														+ " - Time(ms):" + tl2[t].getTime());
-										tl.setNote(key % 18, note);
+										tl.setNote(key, note);
 										tl.setBPM(nowbpm);
 										break;
 									} else {
@@ -582,7 +593,7 @@ public class Section {
 								}
 							}
 						} else {
-							tl.setNote(key % 18, new NormalNote(wavmap[s[i]]));
+							tl.setNote(key, new NormalNote(wavmap[s[i]]));
 							tl.setBPM(nowbpm);
 						}
 					} else if (key >= 18 && key < 36) {
@@ -591,28 +602,29 @@ public class Section {
 						// + (key - 17) + ":"
 						// + (base + (int) (dt * rate)));
 
-						tl.setHiddenNote(key % 18, new NormalNote(wavmap[s[i]]));
+						tl.setHiddenNote(key - 18, new NormalNote(wavmap[s[i]]));
 
 						tl.setBPM(nowbpm);
 					} else if (key >= 36 && key < 54) {
+						final int index = key - 36;
 						// LN処理
-						if (startln[key % 18] == 0) {
-							tl.setNote(key % 18, new LongNote(wavmap[s[i]]));
+						if (startln[index] == 0) {
+							tl.setNote(index, new LongNote(wavmap[s[i]]));
 							tl.setBPM(nowbpm);
-							startln[key % 18] = s[i];
+							startln[index] = s[i];
 						} else {
 							// LN終端処理
 							TimeLine[] tl2 = model.getAllTimeLines();
 							for (int t = tl2.length - 1; t >= 0; t--) {
-								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(key % 18)) {
-									Note note = tl2[t].getNote(key % 18);
+								if (base + (int) (dt * rate) > tl2[t].getTime() && tl2[t].existNote(index)) {
+									Note note = tl2[t].getNote(index);
 									if (note instanceof LongNote) {
-										tl.setNote(key % 18, note);
+										tl.setNote(index, note);
 										tl.setBPM(nowbpm);
-										if(startln[key % 18] != s[i]) {
+										if(startln[index] != s[i]) {
 											((LongNote)note).getEndnote().setWav(wavmap[s[i]]);
 										}
-										startln[key % 18] = 0;
+										startln[index] = 0;
 										break;
 									} else {
 										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LN内に通常ノートが存在します。レーン: "
@@ -625,15 +637,16 @@ public class Section {
 							}
 						}
 					} else if (key >= 54 && key < 72) {
+						final int index = key - 54;
 						// 地雷ノート処理
-						if (tl.existNote(key % 18)) {
+						if (tl.existNote(index)) {
 							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "地雷ノート追加時に衝突が発生しました : " + (key - 53) + ":"
 									+ (base + (int) (dt * rate))));
 							Logger.getGlobal().warning(
 									model.getTitle() + ":地雷ノート追加時に衝突が発生しました。" + (key - 53) + ":"
 											+ (base + (int) (dt * rate)));
 						}
-						tl.setNote(key % 18, new MineNote(wavmap[0], s[i]));
+						tl.setNote(index, new MineNote(wavmap[0], s[i]));
 						tl.setBPM(nowbpm);
 					} else if (key == 72) {
 						tl.setBGA(bgamap[s[i]]);
@@ -648,30 +661,30 @@ public class Section {
 				}
 				// BPM変化,ストップを考慮したタイム加算
 				double se = 0.0;
-				for (int j = 0; j < bk.length; j++) {
+				for (double bc : bk) {
 					// タイムラインにbpm変化を反映
-					if (bk[j] >= (double) i / slength && bk[j] < (double) (i + 1) / slength) {
-						for (int k = 0; k < st.length; k++) {
+					if (bc >= (double) i / slength && bc < (double) (i + 1) / slength) {
+						for (double stopt :st) {
 							// ストップ
-							if (st[k] >= (double) i / slength + se && st[k] < bk[j]) {
-								dt += 1000 * 60 * 4 * (st[k] - (double) i / slength - se) / nowbpm;
-								se = st[k] - (double) i / slength;
-								model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
+							if (stopt >= (double) i / slength + se && stopt < bc) {
+								dt += 1000 * 60 * 4 * (stopt - (double) i / slength - se) / nowbpm;
+								se = stopt - (double) i / slength;
+								model.getTimeLine(sectionnum + (float)stopt * rate, base + (int) (dt * rate))
 										.setBPM(nowbpm);
-								model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate))
-										.setStop((int) (stop.get(st[k]) * (1000 * 60 * 4 / nowbpm)));
+								model.getTimeLine(sectionnum + (float)stopt * rate, base + (int) (dt * rate))
+										.setStop((int) (stop.get(stopt) * (1000 * 60 * 4 / nowbpm)));
 								// System.out
 								// .println("STOP (BPM変化中) : "
 								// + (stop.get(st[k]) * (1000 * 60 * 4 /
 								// nowbpm))
 								// + " - bpm " + nowbpm
 								// + " - key - " + key);
-								dt += stop.get(st[k]) * (1000 * 60 * 4 / nowbpm) / rate;
+								dt += stop.get(stopt) * (1000 * 60 * 4 / nowbpm) / rate;
 							}
 						}
-						dt += 1000 * 60 * 4 * (bk[j] - (double) i / slength - se) / nowbpm;
-						se = bk[j] - (double) i / slength;
-						nowbpm = bpmchange.get(bk[j]);
+						dt += 1000 * 60 * 4 * (bc - (double) i / slength - se) / nowbpm;
+						se = bc - (double) i / slength;
+						nowbpm = bpmchange.get(bc);
 						// if (model.getTimeLine(base + (int) (dt * rate))
 						// .getBPM() != nowbpm) {
 						// System.out.println("登録するBPMが異なる可能性があります。Time " + (
@@ -681,26 +694,26 @@ public class Section {
 						// base + (int) (dt * rate)).getBPM()
 						// + " → " + nowbpm);
 						// }
-						model.getTimeLine(sectionnum + bk[j].floatValue() * rate, base + (int) (dt * rate)).setBPM(
+						model.getTimeLine(sectionnum + (float)bc * rate, base + (int) (dt * rate)).setBPM(
 								nowbpm);
 						// Logger.getGlobal().info(
 						// "BPM変化:" + nowbpm + "  time:"
 						// + (base + (int) (dt * rate)));
 					}
 				}
-				for (int k = 0; k < st.length; k++) {
+				for (double stopt : st) {
 					// ストップ
-					if (st[k] >= (double) i / slength + se && st[k] < (double) (i + 1) / slength) {
-						dt += 1000 * 60 * 4 * (st[k] - (double) i / slength - se) / nowbpm;
-						se = st[k] - (double) i / slength;
-						model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate)).setBPM(
+					if (stopt >= (double) i / slength + se && stopt < (double) (i + 1) / slength) {
+						dt += 1000 * 60 * 4 * (stopt - (double) i / slength - se) / nowbpm;
+						se = stopt - (double) i / slength;
+						model.getTimeLine(sectionnum + (float)stopt * rate, base + (int) (dt * rate)).setBPM(
 								nowbpm);
-						model.getTimeLine(sectionnum + st[k].floatValue() * rate, base + (int) (dt * rate)).setStop(
-								(int) (stop.get(st[k]) * (1000 * 60 * 4 / nowbpm)));
+						model.getTimeLine(sectionnum + (float)stopt * rate, base + (int) (dt * rate)).setStop(
+								(int) (stop.get(stopt) * (1000 * 60 * 4 / nowbpm)));
 						// System.out.println("STOP : "
 						// + (stop.get(st[k]) * (1000 * 60 * 4 / nowbpm))
 						// + " - bpm " + nowbpm + " - key - " + key);
-						dt += stop.get(st[k]) * (1000 * 60 * 4 / nowbpm) / rate;
+						dt += stop.get(stopt) * (1000 * 60 * 4 / nowbpm) / rate;
 						// if (model.getTimeLine(base + (int) (dt * rate))
 						// .getBPM() != nowbpm) {
 						// System.out.println("登録するBPMが異なる可能性があります。Time " + (
@@ -722,9 +735,5 @@ public class Section {
 				dt += dd;
 			}
 		}
-	}
-
-	public List<DecodeLog> getDecodeLog() {
-		return log;
 	}
 }
