@@ -113,6 +113,7 @@ public class BMSONDecoder {
 			model.setBanner(bmson.info.banner_image);
 			model.setBackbmp(bmson.info.back_image);
 			model.setStagefile(bmson.info.eyecatch_image);
+			model.setPreview(bmson.info.preview_music);
 			if (bmson.bpm_events == null) {
 				bmson.bpm_events = new BpmEvent[0];
 			}

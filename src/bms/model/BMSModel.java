@@ -51,6 +51,7 @@ public class BMSModel implements Comparable {
 	 */
 	private String stagefile = "";
 	private String backbmp = "";
+	private String preview = "";
 	/**
 	 * 標準BPM
 	 */
@@ -614,5 +615,13 @@ public class BMSModel implements Comparable {
 			tl.setStop((int) (tl.getStop() / freq));
 			tl.setTime((int) (tl.getTime() / freq));
 		}
+	}
+
+	public String getPreview() {
+		return preview;
+	}
+
+	public void setPreview(String preview) {
+		this.preview = preview;
 	}
 }
