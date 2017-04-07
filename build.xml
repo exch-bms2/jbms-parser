@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for jbms-parser">
+
+	<property name="build.src" value="src" />
+	<property name="build.dest" value="build" />
+
+	<path id="build.lib">
+	   <fileset dir="lib" includes="*.jar" />
+	</path>
+
+	<target name="clean">
+	   <delete dir="${build.dest}" />
+	   <mkdir dir="${build.dest}" />
+	</target>
+
+	<target name="compile" depends="clean">
+		<javac classpathref="build.lib" srcdir="${build.src}" debug="${debug}" destdir="${build.dest}" encoding="UTF-8" />
+	</target>
+
+	<target name="create_run_jar" depends="compile">
+		<jar destfile="./jbms-parser.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Class-Path" value="." />
+			</manifest>
+			<fileset dir="${build.dest}" />
+			<zipfileset excludes="META-INF/*.SF" src="./lib/jackson-annotations.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="./lib/jackson-core.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="./lib/jackson-databind.jar" />
+		</jar>
+	</target>
+</project>
