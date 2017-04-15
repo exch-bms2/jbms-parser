@@ -285,10 +285,62 @@ public class BMSModel implements Comparable {
 	private static final int[] BMS_NORMALLANE_1P = { 0, 1, 2, 3, 4, 5, 6 };
 	private static final int[] BMS_NORMALLANE_2P = { 9, 10, 11, 12, 13, 14, 15 };
 	private static final int[] PMS_NORMALLANE = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
+	private static final int[] KB_24KEY_NORMALLANE = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49 };
+	private static final int[] KB_24KEY_NORMALLANE_1P = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
+	private static final int[] KB_24KEY_NORMALLANE_2P = { 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49 };
 	private static final int[] BMS_SCRATCHLANE = { 7, 16 };
 	private static final int[] BMS_SCRATCHLANE_1P = { 7 };
 	private static final int[] BMS_SCRATCHLANE_2P = { 16 };
 	private static final int[] PMS_SCRATCHLANE = {};
+	private static final int[] KB_24KEY_SCRATCHLANE = { 24, 25, 50, 51 };
+	private static final int[] KB_24KEY_SCRATCHLANE_1P = { 24, 25 };
+	private static final int[] KB_24KEY_SCRATCHLANE_2P = { 50, 51 };
+
+	private int[][] getLanes(int side) {
+		int[] nlane = BMS_NORMALLANE;
+		int[] slane = BMS_SCRATCHLANE;
+		switch (getUseKeys()) {
+			case 9:
+				nlane = PMS_NORMALLANE;
+				slane = PMS_SCRATCHLANE;
+				break;
+			case 24:
+				if (side == 1) {
+					nlane = KB_24KEY_NORMALLANE_1P;
+					slane = KB_24KEY_SCRATCHLANE_1P;
+				} else if (side == 2) {
+					nlane = KB_24KEY_NORMALLANE_2P;
+					slane = KB_24KEY_SCRATCHLANE_2P;
+				} else {
+					nlane = KB_24KEY_NORMALLANE;
+					slane = KB_24KEY_SCRATCHLANE;
+				}
+				break;
+			default:
+				if (side == 1) {
+					nlane = BMS_NORMALLANE_1P;
+					slane = BMS_SCRATCHLANE_1P;
+				} else if (side == 2) {
+					nlane = BMS_NORMALLANE_2P;
+					slane = BMS_SCRATCHLANE_2P;
+				}
+		}
+		return new int[][] { nlane, slane };
+	}
+
+	private int getMaxLanes() {
+		int[][] lanes = getLanes(0);
+		int laneMax = 0;
+		for (int[] lane : lanes) {
+			for (int laneNumber : lane) {
+				if (laneNumber > laneMax) {
+					laneMax = laneNumber;
+				}
+			}
+		}
+		return laneMax + 2;
+	}
 
 	/**
 	 * 指定の時間範囲、指定の種類のノートの総数を返す
@@ -319,18 +371,9 @@ public class BMSModel implements Comparable {
 	 * @return 指定の時間範囲、指定の種類のの総ノート数
 	 */
 	public int getTotalNotes(int start, int end, int type, int side) {
-		int[] nlane = BMS_NORMALLANE;
-		int[] slane = BMS_SCRATCHLANE;
-		if (getUseKeys() == 9) {
-			nlane = PMS_NORMALLANE;
-			slane = PMS_SCRATCHLANE;
-		} else if (side == 1) {
-			nlane = BMS_NORMALLANE_1P;
-			slane = BMS_SCRATCHLANE_1P;
-		} else if (side == 2) {
-			nlane = BMS_NORMALLANE_2P;
-			slane = BMS_SCRATCHLANE_2P;
-		}
+		int[][] lanes = getLanes(side);
+		int[] nlane = lanes[0];
+		int[] slane = lanes[1];
 
 		int count = 0;
 		for (TimeLine tl : timelines.values()) {
@@ -420,7 +463,7 @@ public class BMSModel implements Comparable {
 	public TimeLine getTimeLine(float section, int time) {
 		TimeLine tl = timelines.get(section);
 		if (tl == null) {
-			tl = new TimeLine(section, time);
+			tl = new TimeLine(section, time, getMaxLanes());
 			timelines.put(section, tl);
 		}
 		return tl;

@@ -106,6 +106,11 @@ public class BMSONDecoder {
 					model.setUseKeys(9);
 					assign = TimeLine.NOTEASSIGN_POPN;
 					break;
+				case "keyboard-24k":
+				case "keyboard-24k-single":
+					model.setUseKeys(24);
+					assign = TimeLine.NOTEASSIGN_KB_24KEY;
+					break;
 				}
 			}
 			model.setLntype(lntype);
