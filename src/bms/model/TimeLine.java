@@ -257,20 +257,24 @@ public class TimeLine {
 	}
 
 	public void setSection(float section) {
-		this.section = section;
 		for(Note n : notes) {
 			if(n != null) {
-				n.setSection(section);
+				if(n instanceof LongNote && n.getSection() != this.section) {
+					((LongNote)n).getEndnote().setSection(section);
+				} else {
+					n.setSection(section);					
+				}
 			}
 		}
 		for(Note n : hiddennotes) {
 			if(n != null) {
-				n.setSection(section);
+				n.setSection(section);					
 			}
 		}
 		for(Note n : bgnotes) {
 			n.setSection(section);
 		}
+		this.section = section;
 	}
 
 	public int getStop() {
