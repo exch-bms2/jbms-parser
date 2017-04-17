@@ -82,37 +82,43 @@ public class BMSONDecoder {
 			model.setTotal(bmson.info.total);
 			model.setBpm(bmson.info.init_bpm);
 			model.setPlaylevel(String.valueOf(bmson.info.level));
-			model.setUseKeys(7);
-			int[] assign = TimeLine.NOTEASSIGN_BEAT;
-			if (bmson.info.mode_hint != null) {
-				switch (bmson.info.mode_hint.toLowerCase()) {
-				case "beat-5k":
-					model.setUseKeys(5);
-					break;
-				case "beat-7k":
-					model.setUseKeys(7);
-					break;
-				case "beat-10k":
-					model.setUseKeys(10);
-					break;
-				case "beat-14k":
-					model.setUseKeys(14);
-					break;
-				case "popn-5k":
-					model.setUseKeys(9);
-					assign = TimeLine.NOTEASSIGN_POPN;
-					break;
-				case "popn-9k":
-					model.setUseKeys(9);
-					assign = TimeLine.NOTEASSIGN_POPN;
-					break;
-				case "keyboard-24k":
-				case "keyboard-24k-single":
-					model.setUseKeys(24);
-					assign = TimeLine.NOTEASSIGN_KB_24KEY;
+			model.setMode(Mode.BEAT_7K);
+			for(Mode mode : Mode.values()) {
+				if(mode.hint.equals(bmson.info.mode_hint)) {
+					model.setMode(mode);
 					break;
 				}
 			}
+//			if (bmson.info.mode_hint != null) {
+//				
+//				switch (bmson.info.mode_hint.toLowerCase()) {
+//				case "beat-5k":
+//					model.setUseKeys(5);
+//					break;
+//				case "beat-7k":
+//					model.setUseKeys(7);
+//					break;
+//				case "beat-10k":
+//					model.setUseKeys(10);
+//					break;
+//				case "beat-14k":
+//					model.setUseKeys(14);
+//					break;
+//				case "popn-5k":
+//					model.setUseKeys(9);
+//					assign = TimeLine.NOTEASSIGN_POPN;
+//					break;
+//				case "popn-9k":
+//					model.setUseKeys(9);
+//					assign = TimeLine.NOTEASSIGN_POPN;
+//					break;
+//				case "keyboard-24k":
+//				case "keyboard-24k-single":
+//					model.setUseKeys(24);
+//					assign = TimeLine.NOTEASSIGN_KB_24KEY;
+//					break;
+//				}
+//			}
 			model.setLntype(lntype);
 
 			model.setBanner(bmson.info.banner_image);
@@ -184,7 +190,7 @@ public class BMSONDecoder {
 						TimeLine tl = getTimeLine(n.y, resolution);
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 					} else {
-						final int key = assign[n.x - 1];
+						final int key = n.x - 1;
 						if (n.l > 0) {
 							// ロングノート
 							TimeLine start = getTimeLine(n.y, resolution);

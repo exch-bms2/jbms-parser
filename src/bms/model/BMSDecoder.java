@@ -184,10 +184,10 @@ public class BMSDecoder {
 
 	private final Map<Integer, Double> stoptable = new TreeMap<Integer, Double>();
 	private final Map<Integer, Double> bpmtable = new TreeMap<Integer, Double>();
-	private final List<Integer> randoms = new ArrayList<Integer>();
-	private final List<Integer> srandoms = new ArrayList<Integer>();
-	private final List<Integer> crandom = new ArrayList<Integer>();
-	private final List<Boolean> skip = new ArrayList<Boolean>();
+	private final Deque<Integer> randoms = new ArrayDeque<Integer>();
+	private final Deque<Integer> srandoms = new ArrayDeque<Integer>();
+	private final Deque<Integer> crandom = new ArrayDeque<Integer>();
+	private final Deque<Boolean> skip = new ArrayDeque<Boolean>();
 
 	/**
 	 * 指定したBMSファイルをモデルにデコードする
@@ -217,7 +217,7 @@ public class BMSDecoder {
 				new DigestInputStream(new DigestInputStream(new ByteArrayInputStream(data), md5digest), sha256digest),
 				"MS932"));) {
 			if (ispms) {
-				model.setUseKeys(9);
+				model.setMode(Mode.POPN_9K);
 			}
 			// Logger.getGlobal().info(
 			// "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
@@ -254,7 +254,7 @@ public class BMSDecoder {
 							crandom.add(random[randoms.size() - 1]);
 						} else {
 							crandom.add((int) (Math.random() * r) + 1);
-							srandoms.add(crandom.get(crandom.size() - 1));
+							srandoms.add(crandom.getLast());
 						}
 					} catch (NumberFormatException e) {
 						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#RANDOMに数字が定義されていません"));
@@ -262,22 +262,22 @@ public class BMSDecoder {
 					}
 				} else if (matchesReserveWord(line, "IF")) {
 					// RANDOM分岐開始
-					skip.add((crandom.get(crandom.size() - 1) != Integer.parseInt(line.substring(4).trim())));
+					skip.add((crandom.getLast() != Integer.parseInt(line.substring(4).trim())));
 				} else if (matchesReserveWord(line, "ENDIF")) {
-					if (skip.size() > 0) {
-						skip.remove(skip.size() - 1);
+					if (!skip.isEmpty()) {
+						skip.removeLast();
 					} else {
 						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "ENDIFに対応するIFが存在しません: " + line));
 						Logger.getGlobal().warning(model.getTitle() + ":ENDIFに対応するIFが存在しません:" + line);
 					}
 				} else if (matchesReserveWord(line, "ENDRANDOM")) {
-					if (crandom.size() > 0) {
-						crandom.remove(crandom.size() - 1);
+					if (!crandom.isEmpty()) {
+						crandom.removeLast();
 					} else {
 						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "ENDRANDOMに対応するRANDOMが存在しません: " + line));
 						Logger.getGlobal().warning(model.getTitle() + ":ENDRANDOMに対応するRANDOMが存在しません:" + line);
 					}
-				} else if (skip.isEmpty() || !skip.get(skip.size() - 1)) {
+				} else if (skip.isEmpty() || !skip.getLast()) {
 					final char c = line.charAt(1);
 					if ('0' <= c && c <= '9' && line.length() > 6) {
 						// line = line.toUpperCase();
@@ -374,22 +374,25 @@ public class BMSDecoder {
 			model.setBgaList(bgalist.toArray(new String[bgalist.size()]));
 
 			Section prev = null;
+			Section[] sections = new Section[maxsec + 1];
 			for (int i = 0; i <= maxsec; i++) {
-				Section newsec = new Section(model, prev,
-						lines[i] != null ? lines[i].toArray(new String[lines[i].size()]) : new String[0],
+				sections[i] = new Section(model, prev,
+						lines[i] != null ? lines[i] : Collections.EMPTY_LIST, 
 						bpmtable, stoptable, log);
-				newsec.makeTimeLines(wm, bm, lnobj);
-				prev = newsec;
+				prev = sections[i];
+			}
+			for(Section section : sections) {
+				section.makeTimeLines(wm, bm, lnobj);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
 			final int[] lastlnstatus = prev.getEndLNStatus(prev);
+			final TimeLine[] tl = model.getAllTimeLines();
 
 			for (int i = 0; i < 18; i++) {
 				if (lastlnstatus[i] != 0) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
 					Logger.getGlobal().warning(model.getTitle() + ":曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1));
-					final TimeLine[] tl = model.getAllTimeLines();
 					for (int index = tl.length - 1; index >= 0; index--) {
 						final Note n = tl[index].getNote(i);
 						if (n != null && n instanceof LongNote && ((LongNote) n).getEndnote().getSection() == 0f) {
@@ -404,17 +407,16 @@ public class BMSDecoder {
 			if (model.getTotal() <= 60.0) {
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "TOTALが未定義か、値が少なすぎます"));
 			}
-			if (model.getAllTimeLines().length > 0) {
-				int[] times = model.getAllTimes();
-				if (times[times.length - 1] >= model.getLastTime() + 30000) {
+			if (tl.length > 0) {
+				if (tl[tl.length - 1].getTime() >= model.getLastTime() + 30000) {
 					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "最後のノート定義から30秒以上の余白があります"));
 				}
 			}
-			if (model.getPlayer() > 1 && model.getUseKeys() <= 7) {
+			if (model.getPlayer() > 1 && (model.getMode() == Mode.BEAT_5K || model.getMode() == Mode.BEAT_7K)) {
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
 				Logger.getGlobal().warning(model.getTitle() + ":#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません");
 			}
-			if (model.getPlayer() == 1 && model.getUseKeys() >= 10) {
+			if (model.getPlayer() == 1 && (model.getMode() == Mode.BEAT_10K || model.getMode() == Mode.BEAT_14K)) {
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
 				Logger.getGlobal().warning(model.getTitle() + ":#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します");
 			}
@@ -424,14 +426,16 @@ public class BMSDecoder {
 
 			if (random == null) {
 				random = new int[randoms.size()];
+				final Iterator<Integer> ri = randoms.iterator();
 				for (int i = 0; i < random.length; i++) {
-					random[i] = randoms.get(i);
+					random[i] = ri.next();
 				}
 				generator = new BMSGenerator(data, ispms, random);
 			}
 			random = new int[srandoms.size()];
+			final Iterator<Integer> ri = srandoms.iterator();
 			for (int i = 0; i < random.length; i++) {
-				random[i] = srandoms.get(i);
+				random[i] = ri.next();
 			}
 			model.setRandom(random);
 			return model;
@@ -502,7 +506,7 @@ public class BMSDecoder {
 	 * @returnバイトデータの16進数文字列表現
 	 */
 	public static String convertHexString(byte[] data) {
-		final StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder(data.length * 2);
 		for (byte b : data) {
 			sb.append(Character.forDigit(b >> 4 & 0xf, 16));
 			sb.append(Character.forDigit(b & 0xf, 16));

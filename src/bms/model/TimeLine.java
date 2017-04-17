@@ -9,8 +9,6 @@ import java.util.*;
  */
 public class TimeLine {
 	
-	// TODO レーン数の可変化
-	
 	/**
 	 * タイムラインの時間(ms)
 	 */
@@ -24,10 +22,10 @@ public class TimeLine {
 	 */
 	private Note[] notes;
 
-	public static final int[] NOTEASSIGN_BEAT = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 };
-	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
-	public static final int[] NOTEASSIGN_KB_24KEY = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
+//	public static final int[] NOTEASSIGN_BEAT = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 };
+//	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
+//	public static final int[] NOTEASSIGN_KB_24KEY = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+//			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
 	/**
 	 * タイムライン上に配置されている演奏レーン分(+フリースクラッチ)の不可視ノート。配置されていないレーンにはnullを入れる。
 	 */
@@ -60,16 +58,6 @@ public class TimeLine {
 	 * POORレイヤー
 	 */
 	private int[] poor;
-
-	public TimeLine(int time) {
-		this.time = time;
-		notes = new Note[18];
-		hiddennotes = new Note[18];
-	}
-
-	public TimeLine(float section, int time) {
-		this(section, time, 18);
-	}
 
 	public TimeLine(float section, int time, int notesize) {
 		this.section = section;
