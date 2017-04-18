@@ -560,6 +560,9 @@ public class BMSModel implements Comparable {
 
 	public void setMode(Mode mode) {
 		this.mode = mode;
+		for(TimeLine tl : timelines.values()) {
+			tl.setLaneCount(mode.key);
+		}
 	}
 
 	public Mode getMode() {

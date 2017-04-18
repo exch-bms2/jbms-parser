@@ -90,6 +90,21 @@ public class TimeLine {
 	public int getLaneCount() {
 		return notes.length;
 	}
+	
+	protected void setLaneCount(int lanes) {
+		if(notes.length != lanes) {
+			Note[] newnotes = new Note[lanes];
+			Note[] newhiddennotes = new Note[lanes];
+			for(int i = 0;i < lanes;i++) {
+				if(i < notes.length) {
+					newnotes[i] = notes[i];
+					newhiddennotes[i] = hiddennotes[i];
+				}
+			}
+			notes = newnotes;
+			hiddennotes = newhiddennotes;
+		}
+	}
 
 	/**
 	 * タイムライン上の総ノート数を返す
