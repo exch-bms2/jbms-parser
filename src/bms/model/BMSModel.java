@@ -102,7 +102,12 @@ public class BMSModel implements Comparable {
 	/**
 	 * 時間とTimeLineのマッピング
 	 */
-	private Map<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
+	private TreeSet<TimeLine> timelines = new TreeSet<TimeLine>(new Comparator<TimeLine>() {
+		@Override
+		public int compare(TimeLine tl1, TimeLine tl2) {
+			return Float.compare(tl1.getSection(), tl2.getSection());
+		}
+	});
 
 	private int[] random;
 
@@ -239,7 +244,7 @@ public class BMSModel implements Comparable {
 
 	public double getMinBPM() {
 		double bpm = this.getBpm();
-		for (TimeLine time : timelines.values()) {
+		for (TimeLine time : timelines) {
 			final double d = time.getBPM();
 			bpm = (bpm <= d) ? bpm : d;
 		}
@@ -248,7 +253,7 @@ public class BMSModel implements Comparable {
 
 	public double getMaxBPM() {
 		double bpm = this.getBpm();
-		for (TimeLine time : timelines.values()) {
+		for (TimeLine time : timelines) {
 			final double d = time.getBPM();
 			bpm = (bpm >= d) ? bpm : d;
 		}
@@ -389,7 +394,7 @@ public class BMSModel implements Comparable {
 		}
 
 		int count = 0;
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			if (tl.getTime() >= start && tl.getTime() < end) {
 				switch (type) {
 				case TOTALNOTES_ALL:
@@ -459,14 +464,12 @@ public class BMSModel implements Comparable {
 	}
 
 	public double getMaxNotesPerTime(int range) {
-		Integer[] times = timelines.keySet().toArray(new Integer[0]);
-		Arrays.sort(times);
-
 		int maxnotes = 0;
-		for (int i = 0; i < times.length; i++) {
+		TimeLine[] tl = getAllTimeLines();
+		for (int i = 0; i < tl.length; i++) {
 			int notes = 0;
-			for (int j = i; times[j] < times[i] + range; j++) {
-				notes += timelines.get(times[j]).getTotalNotes(lntype);
+			for (int j = i; j < tl.length && tl[j].getTime() < tl[i].getTime() + range; j++) {
+				notes += tl[j].getTotalNotes(lntype);
 			}
 			maxnotes = (maxnotes < notes) ? notes : maxnotes;
 		}
@@ -474,16 +477,18 @@ public class BMSModel implements Comparable {
 	}
 
 	public TimeLine getTimeLine(float section, int time) {
-		TimeLine tl = timelines.get(section);
-		if (tl == null) {
-			tl = new TimeLine(section, time, mode.key);
-			timelines.put(section, tl);
+		for(TimeLine tl : timelines) {
+			if(tl.getSection() == section) {
+				return tl;
+			}
 		}
+		TimeLine tl = new TimeLine(section, time, mode.key);
+		timelines.add(tl);
 		return tl;
 	}
 
 	public TimeLine[] getAllTimeLines() {
-		return timelines.values().toArray(new TimeLine[timelines.size()]);
+		return timelines.toArray(new TimeLine[timelines.size()]);
 	}
 
 	public int[] getAllTimes() {
@@ -560,7 +565,7 @@ public class BMSModel implements Comparable {
 
 	public void setMode(Mode mode) {
 		this.mode = mode;
-		for(TimeLine tl : timelines.values()) {
+		for(TimeLine tl : timelines) {
 			tl.setLaneCount(mode.key);
 		}
 	}
@@ -634,7 +639,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsUndefinedLongNote() {
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			for (int i = 0; i < tl.getLaneCount(); i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote
 						&& ((LongNote) tl.getNote(i)).getType() == LongNote.TYPE_UNDEFINED) {
@@ -646,7 +651,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsLongNote() {
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			for (int i = 0; i < tl.getLaneCount(); i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
 					return true;
@@ -657,7 +662,7 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsMineNote() {
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			for (int i = 0; i < tl.getLaneCount(); i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
 					return true;
@@ -669,7 +674,7 @@ public class BMSModel implements Comparable {
 
 	public void setFrequency(float freq) {
 		bpm = bpm * freq;
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			tl.setBPM(tl.getBPM() * freq);
 			tl.setStop((int) (tl.getStop() / freq));
 			tl.setTime((int) (tl.getTime() / freq));
