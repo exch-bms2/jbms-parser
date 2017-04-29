@@ -102,12 +102,7 @@ public class BMSModel implements Comparable {
 	/**
 	 * 時間とTimeLineのマッピング
 	 */
-	private TreeSet<TimeLine> timelines = new TreeSet<TimeLine>(new Comparator<TimeLine>() {
-		@Override
-		public int compare(TimeLine tl1, TimeLine tl2) {
-			return Float.compare(tl1.getSection(), tl2.getSection());
-		}
-	});
+	private TimeLine[] timelines = new TimeLine[0];
 
 	private int[] random;
 
@@ -475,20 +470,13 @@ public class BMSModel implements Comparable {
 		}
 		return maxnotes;
 	}
-
-	public TimeLine getTimeLine(float section, int time) {
-		for(TimeLine tl : timelines) {
-			if(tl.getSection() == section) {
-				return tl;
-			}
-		}
-		TimeLine tl = new TimeLine(section, time, mode.key);
-		timelines.add(tl);
-		return tl;
+	
+	public void setAllTimeLine(TimeLine[] timelines) {
+		this.timelines = timelines;
 	}
 
 	public TimeLine[] getAllTimeLines() {
-		return timelines.toArray(new TimeLine[timelines.size()]);
+		return timelines;
 	}
 
 	public int[] getAllTimes() {
@@ -501,14 +489,14 @@ public class BMSModel implements Comparable {
 	}
 
 	public int getLastTime() {
-		TimeLine[] times = getAllTimeLines();
-
-		for (int i = times.length - 1; i > 0; i--) {
-			for (int lane = 0; lane < times[i].getLaneCount(); lane++) {
-				if (times[i].existNote(lane) || times[i].getHiddenNote(lane) != null
-						|| times[i].getBackGroundNotes().length > 0 || times[i].getBGA() != -1
-						|| times[i].getLayer() != -1) {
-					return times[i].getTime();
+		final int keys = mode.key;
+		for (int i = timelines.length - 1;i >= 0;i--) {
+			final TimeLine tl = timelines[i];
+			for (int lane = 0; lane < keys; lane++) {
+				if (tl.existNote(lane) || tl.getHiddenNote(lane) != null
+						|| tl.getBackGroundNotes().length > 0 || tl.getBGA() != -1
+						|| tl.getLayer() != -1) {
+					return tl.getTime();
 				}
 			}
 		}
@@ -516,11 +504,12 @@ public class BMSModel implements Comparable {
 	}
 
 	public int getLastNoteTime() {
-		TimeLine[] times = getAllTimeLines();
-		for (int i = times.length - 1; i > 0; i--) {
-			for (int lane = 0; lane < times[i].getLaneCount(); lane++) {
-				if (times[i].existNote(lane)) {
-					return times[i].getTime();
+		final int keys = mode.key;
+		for (int i = timelines.length - 1;i >= 0;i--) {
+			final TimeLine tl = timelines[i];
+			for (int lane = 0; lane < keys; lane++) {
+				if (tl.existNote(lane)) {
+					return tl.getTime();
 				}
 			}
 		}
@@ -639,8 +628,9 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsUndefinedLongNote() {
+		final int keys = mode.key;
 		for (TimeLine tl : timelines) {
-			for (int i = 0; i < tl.getLaneCount(); i++) {
+			for (int i = 0; i < keys; i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote
 						&& ((LongNote) tl.getNote(i)).getType() == LongNote.TYPE_UNDEFINED) {
 					return true;
@@ -651,9 +641,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsLongNote() {
+		final int keys = mode.key;
 		for (TimeLine tl : timelines) {
-			for (int i = 0; i < tl.getLaneCount(); i++) {
-				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
+			for (int i = 0; i < keys; i++) {
+				if (tl.getNote(i) instanceof LongNote) {
 					return true;
 				}
 			}
@@ -662,9 +653,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsMineNote() {
+		final int keys = mode.key;
 		for (TimeLine tl : timelines) {
-			for (int i = 0; i < tl.getLaneCount(); i++) {
-				if (tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
+			for (int i = 0; i < keys; i++) {
+				if (tl.getNote(i) instanceof MineNote) {
 					return true;
 				}
 			}

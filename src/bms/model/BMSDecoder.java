@@ -381,13 +381,16 @@ public class BMSDecoder {
 						bpmtable, stoptable, log);
 				prev = sections[i];
 			}
+			
+			final TreeMap<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
 			for(Section section : sections) {
-				section.makeTimeLines(wm, bm, lnobj);
+				section.makeTimeLines(wm, bm, lnobj, timelines);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
 			final int[] lastlnstatus = prev.getEndLNStatus(prev);
-			final TimeLine[] tl = model.getAllTimeLines();
+			final TimeLine[] tl = timelines.values().toArray(new TimeLine[timelines.size()]);
+			model.setAllTimeLine(tl);
 
 			for (int i = 0; i < 18; i++) {
 				if (lastlnstatus[i] != 0) {

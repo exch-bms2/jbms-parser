@@ -263,6 +263,7 @@ public class BMSONDecoder {
 				}
 				model.setBgaList(bgamap);
 			}
+			model.setAllTimeLine(tlcache.values().toArray(new TimeLine[tlcache.size()]));
 
 			Logger.getGlobal().fine(
 					"BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
@@ -293,7 +294,7 @@ public class BMSONDecoder {
 		double section = 0;
 				
 		if (tlcache.size() == 0) {
-			TimeLine tl = model.getTimeLine(0, 0);
+			TimeLine tl = new TimeLine(0, 0, model.getMode().key);
 			tl.setBPM(bpm);
 			tlcache.put(0, tl);
 		}
@@ -313,7 +314,7 @@ public class BMSONDecoder {
 			time += (240000.0 * (y / resolution - section)) / bpm;
 		}
 		
-		TimeLine tl = model.getTimeLine(y / resolution, (int) time);
+		TimeLine tl = new TimeLine(y / resolution, (int) time, model.getMode().key);
 		tl.setBPM(bpm);
 		tlcache.put(y, tl);
 		// System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +
