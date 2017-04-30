@@ -591,6 +591,10 @@ public class Section {
 											Logger.getGlobal().warning(
 													model.getTitle() + ":LN内に通常ノートが存在します!" + (key + 1) + ":"
 															+ tl2.getTime());
+											tl2.setNote(key, null);
+											if(note instanceof NormalNote) {
+												tl2.addBackGroundNote(note);
+											}
 										}
 									}
 								}

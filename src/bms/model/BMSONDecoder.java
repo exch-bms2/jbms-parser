@@ -89,36 +89,7 @@ public class BMSONDecoder {
 					break;
 				}
 			}
-//			if (bmson.info.mode_hint != null) {
-//				
-//				switch (bmson.info.mode_hint.toLowerCase()) {
-//				case "beat-5k":
-//					model.setUseKeys(5);
-//					break;
-//				case "beat-7k":
-//					model.setUseKeys(7);
-//					break;
-//				case "beat-10k":
-//					model.setUseKeys(10);
-//					break;
-//				case "beat-14k":
-//					model.setUseKeys(14);
-//					break;
-//				case "popn-5k":
-//					model.setUseKeys(9);
-//					assign = TimeLine.NOTEASSIGN_POPN;
-//					break;
-//				case "popn-9k":
-//					model.setUseKeys(9);
-//					assign = TimeLine.NOTEASSIGN_POPN;
-//					break;
-//				case "keyboard-24k":
-//				case "keyboard-24k-single":
-//					model.setUseKeys(24);
-//					assign = TimeLine.NOTEASSIGN_KB_24KEY;
-//					break;
-//				}
-//			}
+			List<LongNote>[] lnlist = new List[model.getMode().key];
 			model.setLntype(lntype);
 
 			model.setBanner(bmson.info.banner_image);
@@ -191,43 +162,67 @@ public class BMSONDecoder {
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 					} else {
 						final int key = n.x - 1;
-						if (n.l > 0) {
-							// ロングノート
-							TimeLine start = getTimeLine(n.y, resolution);
-							TimeLine end = getTimeLine(n.y + n.l, resolution);
-							LongNote ln = new LongNote(id, starttime);
-							ln.setDuration(duration);
-							if (start.getNote(key) != null) {
-								bms.model.Note en = start.getNote(key);
-								if (en instanceof LongNote && end.getNote(key) == en) {
-									en.addLayeredNote(ln);
-								} else {
-									Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-									log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
-											+ " y : " + n.y));
+						
+						boolean insideln = false;
+						if(lnlist[key] != null) {
+							final float section = (n.y / resolution);
+							for(LongNote ln : lnlist[key]) {
+								if(ln.getSection() < section && section <= ln.getEndnote().getSection()) {
+									insideln = true;
+									break;
 								}
-							} else {
-								start.setNote(key, ln);
-								// ln.setDuration(end.getTime() -
-								// start.getTime());
-								end.setNote(key, ln);
-								ln.setType(n.t);
-							}
-						} else {
-							// 通常ノート
-							final TimeLine tl = getTimeLine(n.y, resolution);
-							if (tl.existNote(key)) {
-								if (tl.getNote(key) instanceof NormalNote) {
-									tl.getNote(key).addLayeredNote(new NormalNote(id, starttime, duration));
-								} else {
-									Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-									log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
-											+ " y : " + n.y));
-								}
-							} else {
-								tl.setNote(key, new NormalNote(id, starttime, duration));
 							}
 						}
+						
+						if(insideln) {
+							Logger.getGlobal().warning("LN内にノートを定義しています - x :  " + n.x + " y : " + n.y);
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LN内にノートを定義しています - x :  " + n.x
+									+ " y : " + n.y));
+							TimeLine tl = getTimeLine(n.y, resolution);
+							tl.addBackGroundNote(new NormalNote(id, starttime, duration));							
+						} else {
+							if (n.l > 0) {
+								// ロングノート
+								TimeLine start = getTimeLine(n.y, resolution);
+								TimeLine end = getTimeLine(n.y + n.l, resolution);
+								LongNote ln = new LongNote(id, starttime);
+								ln.setDuration(duration);
+								if (start.getNote(key) != null) {
+									bms.model.Note en = start.getNote(key);
+									if (en instanceof LongNote && end.getNote(key) == en) {
+										en.addLayeredNote(ln);
+									} else {
+										Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
+										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
+												+ " y : " + n.y));
+									}
+								} else {
+									start.setNote(key, ln);
+									// ln.setDuration(end.getTime() -
+									// start.getTime());
+									end.setNote(key, ln);
+									ln.setType(n.t);
+									if(lnlist[key] == null) {
+										lnlist[key] = new ArrayList<LongNote>();
+									}
+									lnlist[key].add(ln);
+								}
+							} else {
+								// 通常ノート
+								final TimeLine tl = getTimeLine(n.y, resolution);
+								if (tl.existNote(key)) {
+									if (tl.getNote(key) instanceof NormalNote) {
+										tl.getNote(key).addLayeredNote(new NormalNote(id, starttime, duration));
+									} else {
+										Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
+										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
+												+ " y : " + n.y));
+									}
+								} else {
+									tl.setNote(key, new NormalNote(id, starttime, duration));
+								}
+							}							
+						}						
 					}
 					starttime += duration;
 				}
