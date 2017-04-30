@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author exch
  */
 public class BMSONDecoder {
-	
+
 	private final ObjectMapper mapper = new ObjectMapper();
-	
+
 	private BMSModel model;
 
 	private int lntype;
@@ -56,8 +56,8 @@ public class BMSONDecoder {
 			model.setSubTitle((bmson.info.subtitle != null ? bmson.info.subtitle : "")
 					+ (bmson.info.subtitle != null && bmson.info.subtitle.length() > 0 && bmson.info.chart_name != null
 							&& bmson.info.chart_name.length() > 0 ? " " : "")
-					+ (bmson.info.chart_name != null && bmson.info.chart_name.length() > 0 ? "["
-							+ bmson.info.chart_name + "]" : ""));
+					+ (bmson.info.chart_name != null && bmson.info.chart_name.length() > 0
+							? "[" + bmson.info.chart_name + "]" : ""));
 			model.setArtist(bmson.info.artist);
 			StringBuilder subartist = new StringBuilder();
 			for (String s : bmson.info.subartists) {
@@ -73,9 +73,8 @@ public class BMSONDecoder {
 				} else {
 					model.setJudgerank(JUDGERANK[model.getJudgerank()]);
 				}
-				Logger.getGlobal().warning(
-						"judge_rankの定義が仕様通りでない可能性があるため、修正されました。judge_rank = " + oldjudgerank + " -> "
-								+ model.getJudgerank());
+				Logger.getGlobal().warning("judge_rankの定義が仕様通りでない可能性があるため、修正されました。judge_rank = " + oldjudgerank + " -> "
+						+ model.getJudgerank());
 				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "judge_rankの定義が仕様通りでない可能性があるため、修正されました。judge_rank = "
 						+ oldjudgerank + " -> " + model.getJudgerank()));
 			}
@@ -83,8 +82,8 @@ public class BMSONDecoder {
 			model.setBpm(bmson.info.init_bpm);
 			model.setPlaylevel(String.valueOf(bmson.info.level));
 			model.setMode(Mode.BEAT_7K);
-			for(Mode mode : Mode.values()) {
-				if(mode.hint.equals(bmson.info.mode_hint)) {
+			for (Mode mode : Mode.values()) {
+				if (mode.hint.equals(bmson.info.mode_hint)) {
 					model.setMode(mode);
 					break;
 				}
@@ -96,6 +95,10 @@ public class BMSONDecoder {
 			model.setBackbmp(bmson.info.back_image);
 			model.setStagefile(bmson.info.eyecatch_image);
 			model.setPreview(bmson.info.preview_music);
+			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
+			basetl.setBPM(model.getBpm());
+			tlcache.put(0, basetl);
+
 			if (bmson.bpm_events == null) {
 				bmson.bpm_events = new BpmEvent[0];
 			}
@@ -110,14 +113,16 @@ public class BMSONDecoder {
 			for (BpmEvent n : bmson.bpm_events) {
 				while (stoppos < bmson.stop_events.length && bmson.stop_events[stoppos].y <= n.y) {
 					final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
-					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration) / (tl.getBPM() * resolution)));
+					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration)
+							/ (tl.getBPM() * resolution)));
 					stoppos++;
 				}
 				getTimeLine(n.y, resolution).setBPM(n.bpm);
 			}
 			while (stoppos < bmson.stop_events.length) {
 				final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
-				tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration) / (tl.getBPM() * resolution)));
+				tl.setStop(
+						(int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration) / (tl.getBPM() * resolution)));
 				stoppos++;
 			}
 			// lines処理(小節線)
@@ -162,24 +167,24 @@ public class BMSONDecoder {
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 					} else {
 						final int key = n.x - 1;
-						
+
 						boolean insideln = false;
-						if(lnlist[key] != null) {
+						if (lnlist[key] != null) {
 							final float section = (n.y / resolution);
-							for(LongNote ln : lnlist[key]) {
-								if(ln.getSection() < section && section <= ln.getEndnote().getSection()) {
+							for (LongNote ln : lnlist[key]) {
+								if (ln.getSection() < section && section <= ln.getEndnote().getSection()) {
 									insideln = true;
 									break;
 								}
 							}
 						}
-						
-						if(insideln) {
+
+						if (insideln) {
 							Logger.getGlobal().warning("LN内にノートを定義しています - x :  " + n.x + " y : " + n.y);
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LN内にノートを定義しています - x :  " + n.x
-									+ " y : " + n.y));
+							log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+									"LN内にノートを定義しています - x :  " + n.x + " y : " + n.y));
 							TimeLine tl = getTimeLine(n.y, resolution);
-							tl.addBackGroundNote(new NormalNote(id, starttime, duration));							
+							tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 						} else {
 							if (n.l > 0) {
 								// ロングノート
@@ -192,9 +197,10 @@ public class BMSONDecoder {
 									if (en instanceof LongNote && end.getNote(key) == en) {
 										en.addLayeredNote(ln);
 									} else {
-										Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
-												+ " y : " + n.y));
+										Logger.getGlobal()
+												.warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
+										log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+												"同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y));
 									}
 								} else {
 									start.setNote(key, ln);
@@ -202,7 +208,7 @@ public class BMSONDecoder {
 									// start.getTime());
 									end.setNote(key, ln);
 									ln.setType(n.t);
-									if(lnlist[key] == null) {
+									if (lnlist[key] == null) {
 										lnlist[key] = new ArrayList<LongNote>();
 									}
 									lnlist[key].add(ln);
@@ -214,15 +220,16 @@ public class BMSONDecoder {
 									if (tl.getNote(key) instanceof NormalNote) {
 										tl.getNote(key).addLayeredNote(new NormalNote(id, starttime, duration));
 									} else {
-										Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-										log.add(new DecodeLog(DecodeLog.STATE_WARNING, "同一の位置にノートが複数定義されています - x :  " + n.x
-												+ " y : " + n.y));
+										Logger.getGlobal()
+												.warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
+										log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+												"同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y));
 									}
 								} else {
 									tl.setNote(key, new NormalNote(id, starttime, duration));
 								}
-							}							
-						}						
+							}
+						}
 					}
 					starttime += duration;
 				}
@@ -260,9 +267,8 @@ public class BMSONDecoder {
 			}
 			model.setAllTimeLine(tlcache.values().toArray(new TimeLine[tlcache.size()]));
 
-			Logger.getGlobal().fine(
-					"BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
-							+ (System.currentTimeMillis() - currnttime));
+			Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
+					+ (System.currentTimeMillis() - currnttime));
 			model.setPath(f.toAbsolutePath().toString());
 			return model;
 		} catch (JsonParseException e) {
@@ -287,12 +293,6 @@ public class BMSONDecoder {
 		double bpm = model.getBpm();
 		double time = 0;
 		double section = 0;
-				
-		if (tlcache.size() == 0) {
-			TimeLine tl = new TimeLine(0, 0, model.getMode().key);
-			tl.setBPM(bpm);
-			tlcache.put(0, tl);
-		}
 
 		for (TimeLine tl : tlcache.values()) {
 			if (tl.getSection() > y / resolution) {
@@ -308,7 +308,7 @@ public class BMSONDecoder {
 		if (tlcache.lastEntry().getValue().getSection() < y / resolution) {
 			time += (240000.0 * (y / resolution - section)) / bpm;
 		}
-		
+
 		TimeLine tl = new TimeLine(y / resolution, (int) time, model.getMode().key);
 		tl.setBPM(bpm);
 		tlcache.put(y, tl);
