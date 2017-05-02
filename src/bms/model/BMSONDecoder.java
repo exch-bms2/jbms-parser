@@ -300,7 +300,7 @@ public class BMSONDecoder {
 
 		Entry<Integer, TimeLine> le = tlcache.lowerEntry(y);
 		double bpm = le.getValue().getBPM();
-		double time = timecache.get(le.getKey()) + (240000.0 * ((y  - le.getKey()) / resolution)) / bpm;			
+		double time = timecache.get(le.getKey()) + le.getValue().getStop() + (240000.0 * ((y  - le.getKey()) / resolution)) / bpm;			
 
 		TimeLine tl = new TimeLine(y / resolution, (int) time, model.getMode().key);
 		tl.setBPM(bpm);
