@@ -123,13 +123,13 @@ public class BMSONDecoder {
 			Arrays.sort(bmson.stop_events, comparator);
 
 			for (BpmEvent n : bmson.bpm_events) {
+				getTimeLine(n.y, resolution).setBPM(n.bpm);
 				while (stoppos < bmson.stop_events.length && bmson.stop_events[stoppos].y <= n.y) {
 					final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
 					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration)
 							/ (tl.getBPM() * resolution)));
 					stoppos++;
 				}
-				getTimeLine(n.y, resolution).setBPM(n.bpm);
 			}
 			while (stoppos < bmson.stop_events.length) {
 				final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
