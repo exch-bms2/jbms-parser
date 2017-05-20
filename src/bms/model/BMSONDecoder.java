@@ -117,25 +117,24 @@ public class BMSONDecoder {
 				}
 			};
 
+			int bpmpos = 0;
 			int stoppos = 0;
 			// bpmNotes, stopNotes処理
 			Arrays.sort(bmson.bpm_events, comparator);
 			Arrays.sort(bmson.stop_events, comparator);
 
-			for (BpmEvent n : bmson.bpm_events) {
-				getTimeLine(n.y, resolution).setBPM(n.bpm);
-				while (stoppos < bmson.stop_events.length && bmson.stop_events[stoppos].y <= n.y) {
-					final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
+			while(bpmpos < bmson.bpm_events.length || stoppos < bmson.stop_events.length) {
+				final int bpmy = bpmpos < bmson.bpm_events.length ? bmson.bpm_events[bpmpos].y : Integer.MAX_VALUE;
+				final int stopy = stoppos < bmson.stop_events.length ? bmson.stop_events[stoppos].y : Integer.MAX_VALUE;
+				if(bpmy <= stopy) {
+					getTimeLine(bpmy, resolution).setBPM(bmson.bpm_events[bpmpos].bpm);
+					bpmpos++;
+				} else if(stopy != Integer.MAX_VALUE) {
+					final TimeLine tl = getTimeLine(stopy, resolution);
 					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration)
 							/ (tl.getBPM() * resolution)));
-					stoppos++;
+					stoppos++;					
 				}
-			}
-			while (stoppos < bmson.stop_events.length) {
-				final TimeLine tl = getTimeLine(bmson.stop_events[stoppos].y, resolution);
-				tl.setStop(
-						(int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration) / (tl.getBPM() * resolution)));
-				stoppos++;
 			}
 			// lines処理(小節線)
 			if (bmson.lines != null) {

@@ -1,6 +1,7 @@
 package bms.model;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 /**
@@ -294,71 +295,6 @@ public class Section {
 		return result;			
 	}
 
-	public double getSectionRate() {
-		return rate;
-	}
-
-	private double _lastbpm = 0.0;
-
-	public double getStartBPM() {
-		if (_lastbpm != 0.0) {
-			return _lastbpm;
-		}
-		if (prev != null) {
-			// 前小節の最後のBPMを返す
-			_lastbpm = prev.bpmchange.size() > 0 ? prev.bpmchange.lastEntry().getValue() : prev.getStartBPM();
-			return _lastbpm;
-		}
-		// 開始時のBPMを返す
-		return model.getBpm();
-	}
-
-	/**
-	 * 小説開始時間(キャッシュ)
-	 */
-	private int _basetime = -1;
-
-	/**
-	 * 小説開始時間を取得する
-	 * 
-	 * @return 小説開始時間
-	 */
-	private int getStartTime() {
-		if (_basetime != -1) {
-			return _basetime;
-		}
-		if (prev != null) {
-			int result = prev.getStartTime();
-
-			double dt = 0.0;
-			// 最終BPM取得
-			double nowbpm = prev.getStartBPM();
-			double prevsection = 0;
-			Iterator<Map.Entry<Double, Double>> stops = prev.stop.entrySet().iterator();
-			Map.Entry<Double, Double> stop = stops.hasNext() ? stops.next() : null;
-			for (Map.Entry<Double, Double> bpm : prev.bpmchange.entrySet()) {
-				for (; stop != null ; stop = stops.hasNext() ? stops.next() : null) {
-					if (stop.getKey() < bpm.getKey()) {
-						dt += stop.getValue() * (1000 * 60 * 4 / nowbpm);
-					} else {
-						break;
-					}
-				}
-				dt += 1000 * 60 * 4 * prev.rate * (bpm.getKey() - prevsection) / nowbpm;
-				nowbpm = bpm.getValue();
-				prevsection = bpm.getKey();
-			}
-			
-			for (; stop != null ; stop = stops.hasNext() ? stops.next() : null) {
-				dt += stop.getValue() * (1000 * 60 * 4 / nowbpm);
-			}
-			dt += 1000 * 60 * 4 * prev.rate * (1.0 - prevsection) / nowbpm;
-			_basetime = (int) (result + dt);
-			return _basetime;
-		}
-		return 0;
-	}
-
 	/**
 	 * 小節開始時のLN状態(キャッシュ)
 	 */
@@ -436,19 +372,21 @@ public class Section {
 	public static final int[] NOTEASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, 12, 13, 14, 15, -1 };
 	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, -1,-1,-1,-1,-1, 5, 6, 7, 8,-1,-1,-1,-1 };
 
+	private TreeMap<Float, TimeLine> tlcache;
+	private TreeMap<Float, Double> timecache;
+
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, TreeMap<Float, TimeLine> tlcache) {
-		final int base = this.getStartTime();
+	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, TreeMap<Float, TimeLine> tlcache, TreeMap<Float, Double> timecache) {
+		this.tlcache = tlcache;
+		this.timecache = timecache;
 		final int[] startln = this.getStartLNStatus().clone();
 		final int[] assign = model.getMode() == Mode.POPN_9K ? NOTEASSIGN_POPN : 
 			(model.getMode() == Mode.BEAT_7K || model.getMode() == Mode.BEAT_14K ? NOTEASSIGN_BEAT7 : NOTEASSIGN_BEAT5);
 		// 小節線追加
-		double nowbpm = this.getStartBPM();
-		final TimeLine basetl = getTimeLine(sectionnum, base, nowbpm, tlcache);
+		final TimeLine basetl = getTimeLine(sectionnum);
 		basetl.setSectionLine(true);
-		basetl.setBPM(this.getStartBPM());
 		final int[] poors = new int[poor.length];
 		for (int i = 0; i < poors.length; i++) {
 			if (bgamap[poor[i]] != -2) {
@@ -457,10 +395,27 @@ public class Section {
 				poors[i] = -1;
 			}
 		}
+		
 		basetl.setPoor(poors);
 		// BPM変化。ストップシーケンステーブル準備
-		final Double[] bk = bpmchange.keySet().toArray(new Double[bpmchange.size()]);;
-		final Double[] st = stop.keySet().toArray(new Double[stop.size()]);
+		Iterator<Entry<Double, Double>> stops = stop.entrySet().iterator();			
+		Map.Entry<Double, Double> ste = stops.hasNext() ? stops.next() : null;
+		Iterator<Entry<Double, Double>> bpms = bpmchange.entrySet().iterator();			
+		Map.Entry<Double, Double> bce = bpms.hasNext() ? bpms.next() : null;
+		
+		while(ste != null || bce != null) {
+			final double bc = bce != null ? bce.getKey() : 2;
+			final double st = ste != null ? ste.getKey() : 2;
+			if(bc <= st) {
+				getTimeLine(sectionnum + (float)(bc * rate)).setBPM(bce.getValue());
+				bce = bpms.hasNext() ? bpms.next() : null;
+			} else if(st <= 1){
+				final TimeLine tl = getTimeLine(sectionnum + (float)(ste.getKey() * rate));
+				tl.setStop((int) (1000.0 * 60 * 4 * ste.getValue() / (tl.getBPM())));
+				ste = stops.hasNext() ? stops.next() : null;
+			}
+		}
+
 		// 通常ノート配置
 		final int size = 74 + auto.length;
 		for (int keys = 0; keys < size; keys++) {
@@ -491,20 +446,19 @@ public class Section {
 			if(s == null) {
 				continue;
 			}
-			double dt = 0.0;
 			final int slength = s.length;
 			for (int i = 0; i < slength; i++) {
 				if (s[i] != 0) {
-					final TimeLine tl = getTimeLine(sectionnum + (float) (rate * i / slength), base + (int) (dt * rate), nowbpm, tlcache);
+					final TimeLine tl = getTimeLine(sectionnum + (float) (rate * i / slength));
 					if (keys < 18) {
 						final int key = assign[keys];
 						if(key != -1) {
 							if (tl.existNote(key)) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
-										+ (base + (int) (dt * rate))));
+										+ tl.getTime()));
 								Logger.getGlobal().warning(
 										model.getTitle() + ":通常ノート追加時に衝突が発生しました。" + (key + 1) + ":"
-												+ (base + (int) (dt * rate)));
+												+ tl.getTime());
 							}
 							if (s[i] == lnobj) {
 								// LN終端処理
@@ -598,10 +552,10 @@ public class Section {
 							// TODO bug:既に出来ているLN内に地雷定義される可能性あり
 							if (tl.existNote(key)) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
-										+ (base + (int) (dt * rate))));
+										+ tl.getTime()));
 								Logger.getGlobal().warning(
 										model.getTitle() + ":地雷ノート追加時に衝突が発生しました。" + (key + 1) + ":"
-												+ (base + (int) (dt * rate)));
+												+ tl.getTime());
 							}
 							tl.setNote(key, new MineNote(wavmap[0], s[i]));
 						}
@@ -613,88 +567,24 @@ public class Section {
 						tl.addBackGroundNote(new NormalNote(wavmap[s[i]]));
 					}
 				}
-				// BPM変化,ストップを考慮したタイム加算
-				// TODO 事前にTimeLineを作って後でノーツ追加(bmsonと同形式)
-				double se = 0.0;
-				for (double bc : bk) {
-					// タイムラインにbpm変化を反映
-					if (bc >= (double) i / slength && bc < (double) (i + 1) / slength) {
-						for (double stopt :st) {
-							// ストップ
-							if (stopt >= (double) i / slength + se && stopt < bc) {
-								dt += 1000 * 60 * 4 * (stopt - (double) i / slength - se) / nowbpm;
-								se = stopt - (double) i / slength;
-								final TimeLine tl =  getTimeLine(sectionnum + (float)stopt * rate, base + (int) (dt * rate), nowbpm, tlcache);
-								tl.setStop((int) (stop.get(stopt) * (1000 * 60 * 4 / nowbpm)));
-								// System.out
-								// .println("STOP (BPM変化中) : "
-								// + (stop.get(st[k]) * (1000 * 60 * 4 /
-								// nowbpm))
-								// + " - bpm " + nowbpm
-								// + " - key - " + key);
-								dt += stop.get(stopt) * (1000 * 60 * 4 / nowbpm) / rate;
-							}
-						}
-						dt += 1000 * 60 * 4 * (bc - (double) i / slength - se) / nowbpm;
-						se = bc - (double) i / slength;
-						nowbpm = bpmchange.get(bc);
-						// if (model.getTimeLine(base + (int) (dt * rate))
-						// .getBPM() != nowbpm) {
-						// System.out.println("登録するBPMが異なる可能性があります。Time " + (
-						// base + (int) (dt * rate)) + " section : "
-						// + (sectionnum + bk[j].floatValue()) + " BPM : " +
-						// model.getTimeLine(
-						// base + (int) (dt * rate)).getBPM()
-						// + " → " + nowbpm);
-						// }
-						getTimeLine(sectionnum + (float)bc * rate, base + (int) (dt * rate), nowbpm, tlcache);
-						// Logger.getGlobal().info(
-						// "BPM変化:" + nowbpm + "  time:"
-						// + (base + (int) (dt * rate)));
-					}
-				}
-				for (double stopt : st) {
-					// ストップ
-					if (stopt >= (double) i / slength + se && stopt < (double) (i + 1) / slength) {
-						dt += 1000 * 60 * 4 * (stopt - (double) i / slength - se) / nowbpm;
-						se = stopt - (double) i / slength;
-						final TimeLine tl = getTimeLine(sectionnum + (float)stopt * rate, base + (int) (dt * rate), nowbpm, tlcache);
-						tl.setStop((int) (stop.get(stopt) * (1000 * 60 * 4 / nowbpm)));
-						// System.out.println("STOP : "
-						// + (stop.get(st[k]) * (1000 * 60 * 4 / nowbpm))
-						// + " - bpm " + nowbpm + " - key - " + key);
-						dt += stop.get(stopt) * (1000 * 60 * 4 / nowbpm) / rate;
-						// if (model.getTimeLine(base + (int) (dt * rate))
-						// .getBPM() != nowbpm) {
-						// System.out.println("登録するBPMが異なる可能性があります。Time " + (
-						// base + (int) (dt * rate)) + " section : "
-						// + (sectionnum + st[k].floatValue()) + " BPM : " +
-						// model.getTimeLine(
-						// base + (int) (dt * rate)).getBPM()
-						// + " → " + nowbpm);
-						// }
-					}
-				}
-				final double dd = 1000 * 60 * 4 * (1.0 / slength - se) / nowbpm;
-				// if (dd * rate < 1.0) {
-				// Logger.getGlobal().warning(
-				// "時間軸:" + (base + (int) (dt * rate))
-				// + "において時間加算が1ms以下で、TimeLine衝突発生");
-				// //dt += 1.0 / rate;
-				// }
-				dt += dd;
 			}
 		}
 	}
 	
-	private TimeLine getTimeLine(float section, int time, double nowbpm, TreeMap<Float, TimeLine> tlcache) {
+	private TimeLine getTimeLine(float section) {
 		final TimeLine tlc = tlcache.get(section);
 		if (tlc != null) {
 			return tlc;
 		}
-		TimeLine tl = new TimeLine(section, time, model.getMode().key);
-		tl.setBPM(nowbpm);
+		
+		Entry<Float, TimeLine> le = tlcache.lowerEntry(section);
+		double bpm = le.getValue().getBPM();
+		double time = timecache.get(le.getKey()) + le.getValue().getStop() + (240000.0 * (section  - le.getKey())) / bpm;			
+		
+		TimeLine tl = new TimeLine(section, (int)time, model.getMode().key);
+		tl.setBPM(bpm);
 		tlcache.put(section, tl);
+		timecache.put(section, time);
 		return tl;
 	}
 }

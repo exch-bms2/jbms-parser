@@ -383,8 +383,14 @@ public class BMSDecoder {
 			}
 			
 			final TreeMap<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
+			final TreeMap<Float, Double> timecache = new TreeMap<Float, Double>();
+			
+			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
+			basetl.setBPM(model.getBpm());
+			timelines.put(0f, basetl);
+			timecache.put(0f, 0.0);
 			for(Section section : sections) {
-				section.makeTimeLines(wm, bm, lnobj, timelines);
+				section.makeTimeLines(wm, bm, lnobj, timelines, timecache);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
