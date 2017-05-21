@@ -23,6 +23,7 @@ public class BMSDecoder {
 	private List<DecodeLog> log = new ArrayList<DecodeLog>();
 
 	private int lnobj;
+	private int lnmode;
 
 	final List<String> wavlist = new ArrayList<String>();
 	private final int[] wm = new int[36 * 36];
@@ -130,9 +131,24 @@ public class BMSDecoder {
 				model.setBackbmp(arg.replace('\\', '/'));
 			}
 		});
+		reserve.add(new CommandWord("PREVIEW") {
+			public void execute(BMSModel model, String arg) {
+				model.setPreview(arg.replace('\\', '/'));
+			}
+		});
 		reserve.add(new CommandWord("LNOBJ") {
 			public void execute(BMSModel model, String arg) {
 				lnobj = Integer.parseInt(arg.toUpperCase(), 36);
+			}
+		});
+		reserve.add(new CommandWord("LNMODE") {
+			public void execute(BMSModel model, String arg) {
+				try {
+					lnmode = Integer.parseInt(arg);
+				} catch (NumberFormatException e) {
+					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYERに数字が定義されていません"));
+					Logger.getGlobal().warning("BMSファイルの解析中の例外:#PLAYER :" + arg);
+				}
 			}
 		});
 		reserve.add(new CommandWord("DIFFICULTY") {
@@ -198,6 +214,7 @@ public class BMSDecoder {
 	public BMSModel decode(byte[] data, boolean ispms, int[] random) {
 		log.clear();
 		lnobj = -1;
+		lnmode = 0;
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
 		stoptable.clear();
@@ -262,7 +279,12 @@ public class BMSDecoder {
 					}
 				} else if (matchesReserveWord(line, "IF")) {
 					// RANDOM分岐開始
-					skip.add((crandom.getLast() != Integer.parseInt(line.substring(4).trim())));
+					try {
+						skip.add((crandom.getLast() != Integer.parseInt(line.substring(4).trim())));
+					} catch (NumberFormatException e) {
+						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#IFに数字が定義されていません"));
+						Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#IFに数字が定義されていません" + line);
+					}
 				} else if (matchesReserveWord(line, "ENDIF")) {
 					if (!skip.isEmpty()) {
 						skip.removeLast();
@@ -298,17 +320,17 @@ public class BMSDecoder {
 						}
 					} else if (matchesReserveWord(line, "BPM")) {
 						if (line.charAt(4) == ' ') {
-							final String arg = line.substring(5).trim();
 							// BPMは小数点のケースがある(FREEDOM DiVE)
 							try {
+								final String arg = line.substring(5).trim();
 								model.setBpm(Double.parseDouble(arg));
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#BPMに数字が定義されていません : " + line));
-								Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#BPM :" + arg);
+								Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外::" + line);
 							}
 						} else {
-							String bpm = line.substring(7).trim();
 							try {
+								String bpm = line.substring(7).trim();
 								bpmtable.put(parseInt36(line, 4), Double.parseDouble(bpm));
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#BPMxxに数字が定義されていません : " + line));
@@ -318,8 +340,8 @@ public class BMSDecoder {
 					} else if (matchesReserveWord(line, "WAV")) {
 						// 音源ファイル
 						if (line.length() >= 8) {
-							final String file_name = line.substring(7).trim().replace('\\', '/');
 							try {
+								final String file_name = line.substring(7).trim().replace('\\', '/');
 								wm[parseInt36(line, 4)] = wavlist.size();
 								wavlist.add(file_name);
 							} catch (NumberFormatException e) {
@@ -334,8 +356,8 @@ public class BMSDecoder {
 					} else if (matchesReserveWord(line, "BMP")) {
 						// BGAファイル
 						if (line.length() >= 8) {
-							final String file_name = line.substring(7).trim().replace('\\', '/');
 							try {
+								final String file_name = line.substring(7).trim().replace('\\', '/');
 								bm[parseInt36(line, 4)] = bgalist.size();
 								bgalist.add(file_name);
 							} catch (NumberFormatException e) {
@@ -349,8 +371,8 @@ public class BMSDecoder {
 						}
 					} else if (matchesReserveWord(line, "STOP")) {
 						if (line.length() >= 9) {
-							String stop = line.substring(8).trim();
 							try {
+								String stop = line.substring(8).trim();
 								stoptable.put(parseInt36(line, 5), Double.parseDouble(stop) / 192);
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#STOPxxに数字が定義されていません : " + line));
@@ -390,7 +412,7 @@ public class BMSDecoder {
 			timelines.put(0f, basetl);
 			timecache.put(0f, 0.0);
 			for(Section section : sections) {
-				section.makeTimeLines(wm, bm, lnobj, timelines, timecache);
+				section.makeTimeLines(wm, bm, lnobj, lnmode, timelines, timecache);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));

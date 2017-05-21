@@ -378,7 +378,7 @@ public class Section {
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, TreeMap<Float, TimeLine> tlcache, TreeMap<Float, Double> timecache) {
+	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, int lnmode, TreeMap<Float, TimeLine> tlcache, TreeMap<Float, Double> timecache) {
 		this.tlcache = tlcache;
 		this.timecache = timecache;
 		final int[] startln = this.getStartLNStatus().clone();
@@ -473,6 +473,7 @@ public class Section {
 										if (note instanceof NormalNote) {
 											// LNOBJの直前のノートをLNに差し替える
 											LongNote ln = new LongNote(note.getWav());
+											ln.setType(lnmode);
 											tl2.setNote(key, ln);
 											tl.setNote(key, ln);
 											break;
@@ -524,6 +525,7 @@ public class Section {
 									if (tl2.existNote(key)) {
 										Note note = tl2.getNote(key);
 										if (note instanceof LongNote) {
+											((LongNote)note).setType(lnmode);
 											tl.setNote(key, note);
 											if(startln[keys - 36] != s[i]) {
 												((LongNote)note).getEndnote().setWav(wavmap[s[i]]);
