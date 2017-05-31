@@ -479,9 +479,9 @@ public class BMSModel implements Comparable {
 		return timelines;
 	}
 
-	public int[] getAllTimes() {
+	public long[] getAllTimes() {
 		TimeLine[] times = getAllTimeLines();
-		int[] result = new int[times.length];
+		long[] result = new long[times.length];
 		for (int i = 0; i < times.length; i++) {
 			result[i] = times[i].getTime();
 		}
@@ -668,8 +668,8 @@ public class BMSModel implements Comparable {
 		bpm = bpm * freq;
 		for (TimeLine tl : timelines) {
 			tl.setBPM(tl.getBPM() * freq);
-			tl.setStop((int) (tl.getStop() / freq));
-			tl.setTime((int) (tl.getTime() / freq));
+			tl.setStop((long) (tl.getStop() / freq));
+			tl.setTime((long) (tl.getTime() / freq));
 		}
 	}
 

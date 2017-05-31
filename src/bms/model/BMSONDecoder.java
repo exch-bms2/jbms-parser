@@ -159,7 +159,7 @@ public class BMSONDecoder {
 							break;
 						}
 					}
-					int duration = 0;
+					long duration = 0;
 					if (!n.c) {
 						starttime = 0;
 					}

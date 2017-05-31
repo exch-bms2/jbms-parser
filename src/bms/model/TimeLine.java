@@ -12,7 +12,7 @@ public class TimeLine {
 	/**
 	 * タイムラインの時間(ms)
 	 */
-	private int time;
+	private long time;
 	/**
 	 * タイムラインの小節
 	 */
@@ -41,7 +41,7 @@ public class TimeLine {
 	/**
 	 * ストップ時間(ms)
 	 */
-	private int stop;
+	private long stop;
 	/**
 	 * 表示するBGAのID
 	 */
@@ -63,10 +63,10 @@ public class TimeLine {
 	}
 
 	public int getTime() {
-		return time;
+		return (int) time;
 	}
 
-	protected void setTime(int time) {
+	protected void setTime(long time) {
 		this.time = time;
 		for(Note n : notes) {
 			if(n != null) {
@@ -280,11 +280,11 @@ public class TimeLine {
 		this.section = section;
 	}
 
-	public int getStop() {
+	public long getStop() {
 		return stop;
 	}
 
-	public void setStop(int stop) {
+	public void setStop(long stop) {
 		this.stop = stop;
 	}
 }
