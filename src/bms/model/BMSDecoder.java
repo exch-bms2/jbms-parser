@@ -426,7 +426,7 @@ public class BMSDecoder {
 					Logger.getGlobal().warning(model.getTitle() + ":曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1));
 					for (int index = tl.length - 1; index >= 0; index--) {
 						final Note n = tl[index].getNote(i);
-						if (n != null && n instanceof LongNote && ((LongNote) n).getEndnote().getSection() == 0f) {
+						if (n != null && n instanceof LongNote && ((LongNote) n).getPair() == null) {
 							tl[index].setNote(i, null);
 							break;
 						}

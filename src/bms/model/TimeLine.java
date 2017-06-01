@@ -70,11 +70,7 @@ public class TimeLine {
 		this.time = time;
 		for(Note n : notes) {
 			if(n != null) {
-				if(n instanceof LongNote && n.getSection() != this.section) {
-					((LongNote)n).getEndnote().setSectiontime(time);
-				} else {
-					n.setSectiontime(time);					
-				}
+				n.setSectiontime(time);
 			}
 		}
 		for(Note n : hiddennotes) {
@@ -128,7 +124,7 @@ public class TimeLine {
 					final LongNote ln = (LongNote) note;
 					if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 							|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BMSModel.LNTYPE_LONGNOTE)
-							|| ln.getSection() == section) {
+							|| !ln.isEnd()) {
 						count++;
 					}
 				} else if (note instanceof NormalNote) {
@@ -161,13 +157,8 @@ public class TimeLine {
 		if(note == null) {
 			return;
 		}
-		if(note instanceof LongNote && ((LongNote)note).getSection() != 0f && ((LongNote)note).getSection() != section) {
-			((LongNote)note).getEndnote().setSection(section);
-			((LongNote)note).getEndnote().setSectiontime(time);			
-		} else {
-			note.setSection(section);
-			note.setSectiontime(time);
-		}
+		note.setSection(section);
+		note.setSectiontime(time);
 	}
 
 	public void setHiddenNote(int lane, Note note) {
@@ -262,11 +253,7 @@ public class TimeLine {
 	public void setSection(float section) {
 		for(Note n : notes) {
 			if(n != null) {
-				if(n instanceof LongNote && ((LongNote)n).getEndnote().getSection() == this.section) {
-					((LongNote)n).getEndnote().setSection(section);
-				} else {
-					n.setSection(section);					
-				}
+				n.setSection(section);					
 			}
 		}
 		for(Note n : hiddennotes) {

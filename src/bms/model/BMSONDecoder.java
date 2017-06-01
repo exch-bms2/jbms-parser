@@ -177,7 +177,7 @@ public class BMSONDecoder {
 						if (lnlist[key] != null) {
 							final float section = (n.y / resolution);
 							for (LongNote ln : lnlist[key]) {
-								if (ln.getSection() < section && section <= ln.getEndnote().getSection()) {
+								if (ln.getSection() < section && section <= ln.getPair().getSection()) {
 									insideln = true;
 									break;
 								}
@@ -197,7 +197,7 @@ public class BMSONDecoder {
 								ln.setDuration(duration);
 								if (tl.getNote(key) != null) {
 									bms.model.Note en = tl.getNote(key);
-									if (en instanceof LongNote && end.getNote(key) == en) {
+									if (en instanceof LongNote && end.getNote(key) == ((LongNote)en).getPair()) {
 										en.addLayeredNote(ln);
 									} else {
 										Logger.getGlobal()
@@ -222,8 +222,10 @@ public class BMSONDecoder {
 										tl.setNote(key, ln);
 										// ln.setDuration(end.getTime() -
 										// start.getTime());
-										end.setNote(key, ln);
+										LongNote lnend = new LongNote(-2);
+										end.setNote(key, lnend);
 										ln.setType(n.t);
+										ln.setPair(lnend);										
 										if (lnlist[key] == null) {
 											lnlist[key] = new ArrayList<LongNote>();
 										}

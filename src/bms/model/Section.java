@@ -475,7 +475,9 @@ public class Section {
 											LongNote ln = new LongNote(note.getWav());
 											ln.setType(lnmode);
 											tl2.setNote(key, ln);
-											tl.setNote(key, ln);
+											LongNote lnend = new LongNote(-2);
+											tl.setNote(key, lnend);
+											ln.setPair(lnend);
 											break;
 										} else if (note instanceof LongNote && ((LongNote) note).getSection() == tl2.getSection()) {
 											log.add(new DecodeLog(DecodeLog.STATE_WARNING,
@@ -526,10 +528,9 @@ public class Section {
 										Note note = tl2.getNote(key);
 										if (note instanceof LongNote) {
 											((LongNote)note).setType(lnmode);
-											tl.setNote(key, note);
-											if(startln[keys - 36] != s[i]) {
-												((LongNote)note).getEndnote().setWav(wavmap[s[i]]);
-											}
+											LongNote noteend = new LongNote(startln[keys - 36] != s[i] ? wavmap[s[i]] : -2);
+											tl.setNote(key, noteend);
+											((LongNote)note).setPair(noteend);
 											startln[keys - 36] = 0;
 											break;
 										} else {
