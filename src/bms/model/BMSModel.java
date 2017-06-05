@@ -680,4 +680,16 @@ public class BMSModel implements Comparable {
 	public void setPreview(String preview) {
 		this.preview = preview;
 	}
+
+	public EventLane getEventLane() {
+		return new EventLane(this);
+	}	
+
+	public Lane[] getLanes() {
+		Lane[] lanes = new Lane[mode.key];
+		for(int i = 0;i < lanes.length;i++) {
+			lanes[i] = new Lane(this, i);
+		}
+		return lanes;
+	}	
 }
