@@ -17,7 +17,7 @@ public abstract class Note implements Cloneable {
 	/**
 	 * ノートが配置されている時間
 	 */
-	private long sectiontime;
+	private long time;
 
 	/**
 	 * アサインされている 音源ID
@@ -38,7 +38,7 @@ public abstract class Note implements Cloneable {
 	/**
 	 * ノーツの演奏時間
 	 */
-	private long time;
+	private long playtime;
 
 	private List<Note> notes = new ArrayList();
 
@@ -74,12 +74,12 @@ public abstract class Note implements Cloneable {
 		this.duration = duration;
 	}
 
-	public int getTime() {
-		return (int)time;
+	public int getPlayTime() {
+		return (int)playtime;
 	}
 
-	public void setTime(long time) {
-		this.time = time;
+	public void setPlayTime(long playtime) {
+		this.playtime = playtime;
 	}
 
 	public float getSection() {
@@ -90,12 +90,12 @@ public abstract class Note implements Cloneable {
 		this.section = section;
 	}
 
-	public int getSectiontime() {
-		return (int) sectiontime;
+	public int getTime() {
+		return (int) time;
 	}
 
-	public void setSectiontime(long sectiontime) {
-		this.sectiontime = sectiontime;
+	public void setTime(long time) {
+		this.time = time;
 	}
 
 	public void addLayeredNote(Note n) {

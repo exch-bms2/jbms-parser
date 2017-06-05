@@ -70,16 +70,16 @@ public class TimeLine {
 		this.time = time;
 		for(Note n : notes) {
 			if(n != null) {
-				n.setSectiontime(time);
+				n.setTime(time);
 			}
 		}
 		for(Note n : hiddennotes) {
 			if(n != null) {
-				n.setSectiontime(time);
+				n.setTime(time);
 			}
 		}
 		for(Note n : bgnotes) {
-			n.setSectiontime(time);
+			n.setTime(time);
 		}
 	}
 
@@ -158,7 +158,7 @@ public class TimeLine {
 			return;
 		}
 		note.setSection(section);
-		note.setSectiontime(time);
+		note.setTime(time);
 	}
 
 	public void setHiddenNote(int lane, Note note) {
