@@ -83,6 +83,9 @@ public class BMSDecoder {
 		});
 		reserve.add(new CommandWord("RANK") {
 			public void execute(BMSModel model, String arg) {
+				if(model.getJudgerank() >= 10) {
+					return;
+				}
 				try {
 					final int rank = Integer.parseInt(arg);
 					if (rank >= 0 && rank < 5) {
@@ -98,7 +101,17 @@ public class BMSDecoder {
 		});
 		reserve.add(new CommandWord("DEFEXRANK") {
 			public void execute(BMSModel model, String arg) {
-				// TODO 未実装
+				try {
+					final int rank = Integer.parseInt(arg);
+					if (rank >= 10) {
+						model.setJudgerank(rank);
+					} else {
+						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#DEFEXRANK 10以下はサポートしていません" + rank));
+					}
+				} catch (NumberFormatException e) {
+					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#DEFEXRANKに数字が定義されていません"));
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#DEFEXRANK :" + arg);
+				}
 			}
 		});
 		reserve.add(new CommandWord("TOTAL") {
