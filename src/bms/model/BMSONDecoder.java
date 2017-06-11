@@ -109,7 +109,7 @@ public class BMSONDecoder {
 				bmson.stop_events = new StopEvent[0];
 			}
 
-			final float resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
+			final double resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
 			final Comparator<BMSONObject> comparator = new Comparator<BMSONObject>() {
 				@Override
 				public int compare(BMSONObject n1, BMSONObject n2) {
@@ -131,7 +131,7 @@ public class BMSONDecoder {
 					bpmpos++;
 				} else if(stopy != Integer.MAX_VALUE) {
 					final TimeLine tl = getTimeLine(stopy, resolution);
-					tl.setStop((int) ((1000.0 * 60 * 4 * bmson.stop_events[stoppos].duration)
+					tl.setStop((long) ((1000.0 * 1000 * 60 * 4 * bmson.stop_events[stoppos].duration)
 							/ (tl.getBPM() * resolution)));
 					stoppos++;					
 				}
@@ -145,7 +145,7 @@ public class BMSONDecoder {
 
 			List<String> wavmap = new ArrayList<String>(bmson.sound_channels.length);
 			int id = 0;
-			int starttime = 0;
+			long starttime = 0;
 			for (SoundChannel sc : bmson.sound_channels) {
 				wavmap.add(sc.name);
 				Arrays.sort(sc.notes, comparator);
@@ -165,7 +165,7 @@ public class BMSONDecoder {
 					}
 					TimeLine tl = getTimeLine(n.y, resolution);
 					if (next != null && next.c) {
-						duration = getTimeLine(next.y, resolution).getTime() - tl.getTime();
+						duration = getTimeLine(next.y, resolution).getMicroTime() - tl.getMicroTime();
 					}
 					if (n.x == 0) {
 						// BGノート
@@ -175,7 +175,7 @@ public class BMSONDecoder {
 
 						boolean insideln = false;
 						if (lnlist[key] != null) {
-							final float section = (n.y / resolution);
+							final double section = (n.y / resolution);
 							for (LongNote ln : lnlist[key]) {
 								if (ln.getSection() < section && section <= ln.getPair().getSection()) {
 									insideln = true;
@@ -292,7 +292,7 @@ public class BMSONDecoder {
 		return null;
 	}
 
-	private TimeLine getTimeLine(int y, float resolution) {
+	private TimeLine getTimeLine(int y, double resolution) {
 		// Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
 		final TimeLine tlc = tlcache.get(y);
 		if (tlc != null) {
@@ -301,9 +301,9 @@ public class BMSONDecoder {
 
 		Entry<Integer, TimeLine> le = tlcache.lowerEntry(y);
 		double bpm = le.getValue().getBPM();
-		double time = timecache.get(le.getKey()) + le.getValue().getStop() + (240000.0 * ((y  - le.getKey()) / resolution)) / bpm;			
+		double time = timecache.get(le.getKey()) + le.getValue().getMicroStop() + (240000.0 * 1000 * ((y  - le.getKey()) / resolution)) / bpm;			
 
-		TimeLine tl = new TimeLine(y / resolution, (int) time, model.getMode().key);
+		TimeLine tl = new TimeLine(y / resolution, (long) time, model.getMode().key);
 		tl.setBPM(bpm);
 		tlcache.put(y, tl);
 		timecache.put(y, time);

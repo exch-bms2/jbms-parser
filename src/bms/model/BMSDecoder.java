@@ -417,13 +417,13 @@ public class BMSDecoder {
 				prev = sections[i];
 			}
 			
-			final TreeMap<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
-			final TreeMap<Float, Double> timecache = new TreeMap<Float, Double>();
+			final TreeMap<Double, TimeLine> timelines = new TreeMap<Double, TimeLine>();
+			final TreeMap<Double, Double> timecache = new TreeMap<Double, Double>();
 			
 			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 			basetl.setBPM(model.getBpm());
-			timelines.put(0f, basetl);
-			timecache.put(0f, 0.0);
+			timelines.put(0.0, basetl);
+			timecache.put(0.0, 0.0);
 			for(Section section : sections) {
 				section.makeTimeLines(wm, bm, lnobj, lnmode, timelines, timecache);
 			}

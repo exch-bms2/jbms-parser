@@ -16,7 +16,7 @@ public class TimeLine {
 	/**
 	 * タイムラインの小節
 	 */
-	private float section;
+	private double section;
 	/**
 	 * タイムライン上に配置されている演奏レーン分のノート。配置されていないレーンにはnullを入れる。
 	 */
@@ -55,7 +55,7 @@ public class TimeLine {
 	 */
 	private int[] poor;
 
-	public TimeLine(float section, int time, int notesize) {
+	public TimeLine(double section, long time, int notesize) {
 		this.section = section;
 		this.time = time;
 		notes = new Note[notesize];
@@ -63,7 +63,11 @@ public class TimeLine {
 	}
 
 	public int getTime() {
-		return (int) time;
+		return (int) (time / 1000);
+	}
+	
+	public long getMicroTime() {
+		return time;
 	}
 
 	protected void setTime(long time) {
@@ -246,11 +250,11 @@ public class TimeLine {
 		this.poor = poor;
 	}
 
-	public float getSection() {
+	public double getSection() {
 		return section;
 	}
 
-	public void setSection(float section) {
+	public void setSection(double section) {
 		for(Note n : notes) {
 			if(n != null) {
 				n.setSection(section);					
@@ -267,7 +271,11 @@ public class TimeLine {
 		this.section = section;
 	}
 
-	public long getStop() {
+	public int getStop() {
+		return (int) (stop / 1000);
+	}
+	
+	public long getMicroStop() {
 		return stop;
 	}
 

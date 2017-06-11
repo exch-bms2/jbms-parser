@@ -32,7 +32,7 @@ public class Section {
 	/**
 	 * 小節の拡大倍率
 	 */
-	private float rate = 1.0f;
+	private double rate = 1.0;
 	/**
 	 * BGレーン
 	 */
@@ -90,7 +90,7 @@ public class Section {
 
 	private final BMSModel model;
 
-	private final float sectionnum;
+	private final double sectionnum;
 
 	private final List<DecodeLog> log;
 
@@ -140,7 +140,7 @@ public class Section {
 			case SECTION_RATE:
 				int colon_index = line.indexOf(":");
 				line = line.substring(colon_index + 1, line.length());
-				rate = Float.valueOf(line);
+				rate = Double.valueOf(line);
 				break;
 			// BPM変化
 			case BPM_CHANGE:
@@ -372,13 +372,13 @@ public class Section {
 	public static final int[] NOTEASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, 12, 13, 14, 15, -1 };
 	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, -1,-1,-1,-1,-1, 5, 6, 7, 8,-1,-1,-1,-1 };
 
-	private TreeMap<Float, TimeLine> tlcache;
-	private TreeMap<Float, Double> timecache;
+	private TreeMap<Double, TimeLine> tlcache;
+	private TreeMap<Double, Double> timecache;
 
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, int lnmode, TreeMap<Float, TimeLine> tlcache, TreeMap<Float, Double> timecache) {
+	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, int lnmode, TreeMap<Double, TimeLine> tlcache, TreeMap<Double, Double> timecache) {
 		this.tlcache = tlcache;
 		this.timecache = timecache;
 		final int[] startln = this.getStartLNStatus().clone();
@@ -407,11 +407,11 @@ public class Section {
 			final double bc = bce != null ? bce.getKey() : 2;
 			final double st = ste != null ? ste.getKey() : 2;
 			if(bc <= st) {
-				getTimeLine(sectionnum + (float)(bc * rate)).setBPM(bce.getValue());
+				getTimeLine(sectionnum + bc * rate).setBPM(bce.getValue());
 				bce = bpms.hasNext() ? bpms.next() : null;
 			} else if(st <= 1){
-				final TimeLine tl = getTimeLine(sectionnum + (float)(ste.getKey() * rate));
-				tl.setStop((int) (1000.0 * 60 * 4 * ste.getValue() / (tl.getBPM())));
+				final TimeLine tl = getTimeLine(sectionnum + ste.getKey() * rate);
+				tl.setStop((long) (1000.0 * 1000 * 60 * 4 * ste.getValue() / (tl.getBPM())));
 				ste = stops.hasNext() ? stops.next() : null;
 			}
 		}
@@ -449,7 +449,7 @@ public class Section {
 			final int slength = s.length;
 			for (int i = 0; i < slength; i++) {
 				if (s[i] != 0) {
-					final TimeLine tl = getTimeLine(sectionnum + (float) (rate * i / slength));
+					final TimeLine tl = getTimeLine(sectionnum + rate * i / slength);
 					if (keys < 18) {
 						final int key = assign[keys];
 						if(key != -1) {
@@ -463,7 +463,7 @@ public class Section {
 							if (s[i] == lnobj) {
 								// LN終端処理
 								// TODO 高速化のために直前のノートを記録しておく
-								for (Map.Entry<Float, TimeLine> e : tlcache.descendingMap().entrySet()) {
+								for (Map.Entry<Double, TimeLine> e : tlcache.descendingMap().entrySet()) {
 									if(e.getKey() >= tl.getSection() ) {
 										continue;
 									}
@@ -519,7 +519,7 @@ public class Section {
 								startln[keys - 36] = s[i];
 							} else {
 								// LN終端処理
-								for (Map.Entry<Float, TimeLine> e : tlcache.descendingMap().entrySet()) {
+								for (Map.Entry<Double, TimeLine> e : tlcache.descendingMap().entrySet()) {
 									if(e.getKey() >= tl.getSection()) {
 										continue;
 									}
@@ -574,17 +574,17 @@ public class Section {
 		}
 	}
 	
-	private TimeLine getTimeLine(float section) {
+	private TimeLine getTimeLine(double section) {
 		final TimeLine tlc = tlcache.get(section);
 		if (tlc != null) {
 			return tlc;
 		}
 		
-		Entry<Float, TimeLine> le = tlcache.lowerEntry(section);
+		Entry<Double, TimeLine> le = tlcache.lowerEntry(section);
 		double bpm = le.getValue().getBPM();
-		double time = timecache.get(le.getKey()) + le.getValue().getStop() + (240000.0 * (section  - le.getKey())) / bpm;			
+		double time = timecache.get(le.getKey()) + le.getValue().getMicroStop() + (240000.0 * 1000 * (section  - le.getKey())) / bpm;			
 		
-		TimeLine tl = new TimeLine(section, (int)time, model.getMode().key);
+		TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
 		tl.setBPM(bpm);
 		tlcache.put(section, tl);
 		timecache.put(section, time);
