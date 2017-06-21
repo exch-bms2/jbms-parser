@@ -90,6 +90,20 @@ public class BMSONDecoder {
 					break;
 				}
 			}
+			final int[] keyassign;
+			switch(model.getMode()) {
+			case BEAT_5K:
+				keyassign = new int[]{0,1,2,3,4,-1,-1,5};
+				break;
+			case BEAT_10K:				
+				keyassign = new int[]{0,1,2,3,4,-1,-1,5,6,7,8,9,10,-1,-1,11};
+				break;
+				default:
+				keyassign = new int[model.getMode().key];
+				for(int i = 0;i < keyassign.length;i++) {
+					keyassign[i] = i;
+				}
+			}
 			List<LongNote>[] lnlist = new List[model.getMode().key];
 			model.setLntype(lntype);
 
@@ -167,12 +181,12 @@ public class BMSONDecoder {
 					if (next != null && next.c) {
 						duration = getTimeLine(next.y, resolution).getMicroTime() - tl.getMicroTime();
 					}
-					if (n.x == 0) {
+					
+					final int key = n.x > 0 && n.x <= keyassign.length ? keyassign[n.x - 1] : -1;
+					if (key < 0) {
 						// BGノート
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 					} else {
-						final int key = n.x - 1;
-
 						boolean insideln = false;
 						if (lnlist[key] != null) {
 							final double section = (n.y / resolution);

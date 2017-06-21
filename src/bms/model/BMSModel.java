@@ -668,8 +668,8 @@ public class BMSModel implements Comparable {
 		bpm = bpm * freq;
 		for (TimeLine tl : timelines) {
 			tl.setBPM(tl.getBPM() * freq);
-			tl.setStop((long) (tl.getStop() / freq));
-			tl.setTime((long) (tl.getTime() / freq));
+			tl.setStop((long) (tl.getMicroStop() / freq));
+			tl.setTime((long) (tl.getMicroTime() / freq));
 		}
 	}
 
