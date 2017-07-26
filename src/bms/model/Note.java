@@ -13,11 +13,11 @@ public abstract class Note implements Cloneable {
 	/**
 	 * ノートが配置されている小節
 	 */
-	private float section;
+	private double section;
 	/**
 	 * ノートが配置されている時間
 	 */
-	private int sectiontime;
+	private long time;
 
 	/**
 	 * アサインされている 音源ID
@@ -26,11 +26,11 @@ public abstract class Note implements Cloneable {
 	/**
 	 * 音源IDの音の開始時間
 	 */
-	private int start;
+	private long start;
 	/**
 	 * 音源IDの音を鳴らす長さ
 	 */
-	private int duration;
+	private long duration;
 	/**
 	 * ノーツの状態
 	 */
@@ -38,7 +38,7 @@ public abstract class Note implements Cloneable {
 	/**
 	 * ノーツの演奏時間
 	 */
-	private int time;
+	private long playtime;
 
 	private List<Note> notes = new ArrayList();
 
@@ -59,43 +59,55 @@ public abstract class Note implements Cloneable {
 	}
 
 	public int getStarttime() {
+		return (int) (start / 1000);
+	}
+	
+	public long getMicroStarttime() {
 		return start;
 	}
 
-	public void setStarttime(int start) {
+	public void setStarttime(long start) {
 		this.start = start;
 	}
 
 	public int getDuration() {
+		return (int) (duration / 1000);
+	}
+	
+	public long getMicroDuration() {
 		return duration;
 	}
 
-	public void setDuration(int duration) {
+	public void setDuration(long duration) {
 		this.duration = duration;
 	}
 
-	public int getTime() {
-		return time;
+	public int getPlayTime() {
+		return (int)playtime;
 	}
 
-	public void setTime(int time) {
-		this.time = time;
+	public void setPlayTime(long playtime) {
+		this.playtime = playtime;
 	}
 
-	public float getSection() {
+	public double getSection() {
 		return section;
 	}
 
-	public void setSection(float section) {
+	public void setSection(double section) {
 		this.section = section;
 	}
 
-	public int getSectiontime() {
-		return sectiontime;
+	public int getTime() {
+		return (int) (time / 1000);
+	}
+	
+	public long getMicroTime() {
+		return time;
 	}
 
-	public void setSectiontime(int sectiontime) {
-		this.sectiontime = sectiontime;
+	public void setTime(long time) {
+		this.time = time;
 	}
 
 	public void addLayeredNote(Note n) {

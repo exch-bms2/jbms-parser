@@ -7,7 +7,9 @@ package bms.model;
  */
 public class LongNote extends Note {
 	
-	private Note endnote = new NormalNote(-2);
+	private boolean end;
+	
+	private LongNote pair;
 	
 	private int type;
 	
@@ -24,7 +26,7 @@ public class LongNote extends Note {
 		this.setWav(wav);
 	}
 	
-	public LongNote(int wav,int starttime) {
+	public LongNote(int wav,long starttime) {
 		this.setStarttime(starttime);
 		this.setWav(wav);
 	}
@@ -37,20 +39,34 @@ public class LongNote extends Note {
 		this.type = type;
 	}
 
-	public Note getEndnote() {
-		return endnote;
+	protected void setPair(LongNote pair) {
+		pair.pair = this;
+		this.pair = pair;
+		
+		pair.end = pair.getSection() > this.getSection();
+		this.end = !pair.end;
+		type = pair.type = (type != TYPE_UNDEFINED ? type : pair.type);
 	}
-
-	public void setEndnote(Note endnote) {
-		this.endnote = endnote;
+	
+	public LongNote getPair() {
+		return pair;
+	}
+	
+	public boolean isEnd() {
+		return end;
 	}
 
 	@Override
-	public Object clone() {
-		LongNote ln = (LongNote) super.clone();
-		ln.endnote = (Note) endnote.clone();
-		return ln;
+	public Object clone() {		
+		return clone(true);
 	}
 	
+	private Object clone(boolean copypair) {
+		LongNote ln = (LongNote) super.clone();
+		if(copypair) {
+			ln.setPair((LongNote) pair.clone(false));
+		}
+		return ln;
+	}
 	
 }

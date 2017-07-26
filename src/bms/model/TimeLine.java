@@ -9,27 +9,21 @@ import java.util.*;
  */
 public class TimeLine {
 	
-	// TODO レーン数の可変化
-	
 	/**
 	 * タイムラインの時間(ms)
 	 */
-	private int time;
+	private long time;
 	/**
 	 * タイムラインの小節
 	 */
-	private float section;
+	private double section;
 	/**
-	 * タイムライン上に配置されている演奏レーン分(+フリースクラッチ)のノート。配置されていないレーンにはnullを入れる。
+	 * タイムライン上に配置されている演奏レーン分のノート。配置されていないレーンにはnullを入れる。
 	 */
 	private Note[] notes;
 
-	public static final int[] NOTEASSIGN_BEAT = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 };
-	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, 10, 11, 12, 13 };
-	public static final int[] NOTEASSIGN_KB_24KEY = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
 	/**
-	 * タイムライン上に配置されている演奏レーン分(+フリースクラッチ)の不可視ノート。配置されていないレーンにはnullを入れる。
+	 * タイムライン上に配置されている演奏レーン分の不可視ノート。配置されていないレーンにはnullを入れる。
 	 */
 	private Note[] hiddennotes;
 	/**
@@ -47,7 +41,7 @@ public class TimeLine {
 	/**
 	 * ストップ時間(ms)
 	 */
-	private int stop;
+	private long stop;
 	/**
 	 * 表示するBGAのID
 	 */
@@ -61,17 +55,7 @@ public class TimeLine {
 	 */
 	private int[] poor;
 
-	public TimeLine(int time) {
-		this.time = time;
-		notes = new Note[18];
-		hiddennotes = new Note[18];
-	}
-
-	public TimeLine(float section, int time) {
-		this(section, time, 18);
-	}
-
-	public TimeLine(float section, int time, int notesize) {
+	public TimeLine(double section, long time, int notesize) {
 		this.section = section;
 		this.time = time;
 		notes = new Note[notesize];
@@ -79,28 +63,47 @@ public class TimeLine {
 	}
 
 	public int getTime() {
+		return (int) (time / 1000);
+	}
+	
+	public long getMicroTime() {
 		return time;
 	}
 
-	protected void setTime(int time) {
+	protected void setTime(long time) {
 		this.time = time;
 		for(Note n : notes) {
 			if(n != null) {
-				n.setSectiontime(time);
+				n.setTime(time);
 			}
 		}
 		for(Note n : hiddennotes) {
 			if(n != null) {
-				n.setSectiontime(time);
+				n.setTime(time);
 			}
 		}
 		for(Note n : bgnotes) {
-			n.setSectiontime(time);
+			n.setTime(time);
 		}
 	}
 
 	public int getLaneCount() {
 		return notes.length;
+	}
+	
+	protected void setLaneCount(int lanes) {
+		if(notes.length != lanes) {
+			Note[] newnotes = new Note[lanes];
+			Note[] newhiddennotes = new Note[lanes];
+			for(int i = 0;i < lanes;i++) {
+				if(i < notes.length) {
+					newnotes[i] = notes[i];
+					newhiddennotes[i] = hiddennotes[i];
+				}
+			}
+			notes = newnotes;
+			hiddennotes = newhiddennotes;
+		}
 	}
 
 	/**
@@ -125,7 +128,7 @@ public class TimeLine {
 					final LongNote ln = (LongNote) note;
 					if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 							|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BMSModel.LNTYPE_LONGNOTE)
-							|| ln.getSection() == section) {
+							|| !ln.isEnd()) {
 						count++;
 					}
 				} else if (note instanceof NormalNote) {
@@ -158,13 +161,8 @@ public class TimeLine {
 		if(note == null) {
 			return;
 		}
-		if(note instanceof LongNote && ((LongNote)note).getSection() != 0f && ((LongNote)note).getSection() != section) {
-			((LongNote)note).getEndnote().setSection(section);
-			((LongNote)note).getEndnote().setSectiontime(time);			
-		} else {
-			note.setSection(section);
-			note.setSectiontime(time);
-		}
+		note.setSection(section);
+		note.setTime(time);
 	}
 
 	public void setHiddenNote(int lane, Note note) {
@@ -252,32 +250,36 @@ public class TimeLine {
 		this.poor = poor;
 	}
 
-	public float getSection() {
+	public double getSection() {
 		return section;
 	}
 
-	public void setSection(float section) {
-		this.section = section;
+	public void setSection(double section) {
 		for(Note n : notes) {
 			if(n != null) {
-				n.setSection(section);
+				n.setSection(section);					
 			}
 		}
 		for(Note n : hiddennotes) {
 			if(n != null) {
-				n.setSection(section);
+				n.setSection(section);					
 			}
 		}
 		for(Note n : bgnotes) {
 			n.setSection(section);
 		}
+		this.section = section;
 	}
 
 	public int getStop() {
+		return (int) (stop / 1000);
+	}
+	
+	public long getMicroStop() {
 		return stop;
 	}
 
-	public void setStop(int stop) {
+	public void setStop(long stop) {
 		this.stop = stop;
 	}
 }

@@ -20,7 +20,7 @@ public class BMSModel implements Comparable {
 	/**
 	 * 使用するキー数
 	 */
-	private int usekeys;
+	private Mode mode;
 	/**
 	 * タイトル名
 	 */
@@ -102,7 +102,7 @@ public class BMSModel implements Comparable {
 	/**
 	 * 時間とTimeLineのマッピング
 	 */
-	private Map<Float, TimeLine> timelines = new TreeMap<Float, TimeLine>();
+	private TimeLine[] timelines = new TimeLine[0];
 
 	private int[] random;
 
@@ -239,7 +239,7 @@ public class BMSModel implements Comparable {
 
 	public double getMinBPM() {
 		double bpm = this.getBpm();
-		for (TimeLine time : timelines.values()) {
+		for (TimeLine time : timelines) {
 			final double d = time.getBPM();
 			bpm = (bpm <= d) ? bpm : d;
 		}
@@ -248,7 +248,7 @@ public class BMSModel implements Comparable {
 
 	public double getMaxBPM() {
 		double bpm = this.getBpm();
-		for (TimeLine time : timelines.values()) {
+		for (TimeLine time : timelines) {
 			final double d = time.getBPM();
 			bpm = (bpm >= d) ? bpm : d;
 		}
@@ -300,12 +300,13 @@ public class BMSModel implements Comparable {
 	private int[][] getLanes(int side) {
 		int[] nlane = BMS_NORMALLANE;
 		int[] slane = BMS_SCRATCHLANE;
-		switch (getUseKeys()) {
-			case 9:
+		switch (mode) {
+		case POPN_5K:
+		case POPN_9K:
 				nlane = PMS_NORMALLANE;
 				slane = PMS_SCRATCHLANE;
 				break;
-			case 24:
+			case KEYBOARD_24K:
 				if (side == 1) {
 					nlane = KB_24KEY_NORMALLANE_1P;
 					slane = KB_24KEY_SCRATCHLANE_1P;
@@ -371,12 +372,24 @@ public class BMSModel implements Comparable {
 	 * @return 指定の時間範囲、指定の種類のの総ノート数
 	 */
 	public int getTotalNotes(int start, int end, int type, int side) {
-		int[][] lanes = getLanes(side);
-		int[] nlane = lanes[0];
-		int[] slane = lanes[1];
+		if(mode.player == 1 && side == 2) {
+			return 0;
+		}
+		int[] slane = new int[mode.scratchKey.length / (side == 0 ? 1 : mode.player)];
+		for(int i = (side == 2 ? slane.length: 0), index = 0;index < slane.length;i++) {
+			slane[index] = mode.scratchKey[i];
+			index++;
+		}		
+		int[] nlane = new int[(mode.key - mode.scratchKey.length) / (side == 0 ? 1 : mode.player)];
+		for(int i = 0, index = 0;index < nlane.length;i++) {
+			if(!mode.isScratchKey(i)) {
+				nlane[index] = i;
+				index++;				
+			}
+		}
 
 		int count = 0;
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			if (tl.getTime() >= start && tl.getTime() < end) {
 				switch (type) {
 				case TOTALNOTES_ALL:
@@ -396,7 +409,7 @@ public class BMSModel implements Comparable {
 							if (ln.getType() == LongNote.TYPE_CHARGENOTE
 									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
-									|| ln.getSection() == tl.getSection()) {
+									|| !ln.isEnd()) {
 								count++;
 							}
 						}
@@ -417,7 +430,7 @@ public class BMSModel implements Comparable {
 							if (ln.getType() == LongNote.TYPE_CHARGENOTE
 									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
 									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
-									|| ln.getSection() == tl.getSection()) {
+									|| !ln.isEnd()) {
 								count++;
 							}
 						}
@@ -446,36 +459,29 @@ public class BMSModel implements Comparable {
 	}
 
 	public double getMaxNotesPerTime(int range) {
-		Integer[] times = timelines.keySet().toArray(new Integer[0]);
-		Arrays.sort(times);
-
 		int maxnotes = 0;
-		for (int i = 0; i < times.length; i++) {
+		TimeLine[] tl = getAllTimeLines();
+		for (int i = 0; i < tl.length; i++) {
 			int notes = 0;
-			for (int j = i; times[j] < times[i] + range; j++) {
-				notes += timelines.get(times[j]).getTotalNotes(lntype);
+			for (int j = i; j < tl.length && tl[j].getTime() < tl[i].getTime() + range; j++) {
+				notes += tl[j].getTotalNotes(lntype);
 			}
 			maxnotes = (maxnotes < notes) ? notes : maxnotes;
 		}
 		return maxnotes;
 	}
-
-	public TimeLine getTimeLine(float section, int time) {
-		TimeLine tl = timelines.get(section);
-		if (tl == null) {
-			tl = new TimeLine(section, time, getMaxLanes());
-			timelines.put(section, tl);
-		}
-		return tl;
+	
+	public void setAllTimeLine(TimeLine[] timelines) {
+		this.timelines = timelines;
 	}
 
 	public TimeLine[] getAllTimeLines() {
-		return timelines.values().toArray(new TimeLine[timelines.size()]);
+		return timelines;
 	}
 
-	public int[] getAllTimes() {
+	public long[] getAllTimes() {
 		TimeLine[] times = getAllTimeLines();
-		int[] result = new int[times.length];
+		long[] result = new long[times.length];
 		for (int i = 0; i < times.length; i++) {
 			result[i] = times[i].getTime();
 		}
@@ -483,14 +489,14 @@ public class BMSModel implements Comparable {
 	}
 
 	public int getLastTime() {
-		TimeLine[] times = getAllTimeLines();
-
-		for (int i = times.length - 1; i > 0; i--) {
-			for (int lane = 0; lane < 18; lane++) {
-				if (times[i].existNote(lane) || times[i].getHiddenNote(lane) != null
-						|| times[i].getBackGroundNotes().length > 0 || times[i].getBGA() != -1
-						|| times[i].getLayer() != -1) {
-					return times[i].getTime();
+		final int keys = mode.key;
+		for (int i = timelines.length - 1;i >= 0;i--) {
+			final TimeLine tl = timelines[i];
+			for (int lane = 0; lane < keys; lane++) {
+				if (tl.existNote(lane) || tl.getHiddenNote(lane) != null
+						|| tl.getBackGroundNotes().length > 0 || tl.getBGA() != -1
+						|| tl.getLayer() != -1) {
+					return tl.getTime();
 				}
 			}
 		}
@@ -498,11 +504,12 @@ public class BMSModel implements Comparable {
 	}
 
 	public int getLastNoteTime() {
-		TimeLine[] times = getAllTimeLines();
-		for (int i = times.length - 1; i > 0; i--) {
-			for (int lane = 0; lane < 18; lane++) {
-				if (times[i].existNote(lane)) {
-					return times[i].getTime();
+		final int keys = mode.key;
+		for (int i = timelines.length - 1;i >= 0;i--) {
+			final TimeLine tl = timelines[i];
+			for (int lane = 0; lane < keys; lane++) {
+				if (tl.existNote(lane)) {
+					return tl.getTime();
 				}
 			}
 		}
@@ -545,12 +552,15 @@ public class BMSModel implements Comparable {
 		this.sha256 = sha256;
 	}
 
-	public void setUseKeys(int keys) {
-		usekeys = keys;
+	public void setMode(Mode mode) {
+		this.mode = mode;
+		for(TimeLine tl : timelines) {
+			tl.setLaneCount(mode.key);
+		}
 	}
 
-	public int getUseKeys() {
-		return usekeys;
+	public Mode getMode() {
+		return mode;
 	}
 
 	public String[] getWavList() {
@@ -618,8 +628,9 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsUndefinedLongNote() {
-		for (TimeLine tl : timelines.values()) {
-			for (int i = 0; i < 18; i++) {
+		final int keys = mode.key;
+		for (TimeLine tl : timelines) {
+			for (int i = 0; i < keys; i++) {
 				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote
 						&& ((LongNote) tl.getNote(i)).getType() == LongNote.TYPE_UNDEFINED) {
 					return true;
@@ -630,9 +641,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsLongNote() {
-		for (TimeLine tl : timelines.values()) {
-			for (int i = 0; i < 18; i++) {
-				if (tl.getNote(i) != null && tl.getNote(i) instanceof LongNote) {
+		final int keys = mode.key;
+		for (TimeLine tl : timelines) {
+			for (int i = 0; i < keys; i++) {
+				if (tl.getNote(i) instanceof LongNote) {
 					return true;
 				}
 			}
@@ -641,9 +653,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public boolean containsMineNote() {
-		for (TimeLine tl : timelines.values()) {
-			for (int i = 0; i < 18; i++) {
-				if (tl.getNote(i) != null && tl.getNote(i) instanceof MineNote) {
+		final int keys = mode.key;
+		for (TimeLine tl : timelines) {
+			for (int i = 0; i < keys; i++) {
+				if (tl.getNote(i) instanceof MineNote) {
 					return true;
 				}
 			}
@@ -653,10 +666,10 @@ public class BMSModel implements Comparable {
 
 	public void setFrequency(float freq) {
 		bpm = bpm * freq;
-		for (TimeLine tl : timelines.values()) {
+		for (TimeLine tl : timelines) {
 			tl.setBPM(tl.getBPM() * freq);
-			tl.setStop((int) (tl.getStop() / freq));
-			tl.setTime((int) (tl.getTime() / freq));
+			tl.setStop((long) (tl.getMicroStop() / freq));
+			tl.setTime((long) (tl.getMicroTime() / freq));
 		}
 	}
 
@@ -667,4 +680,16 @@ public class BMSModel implements Comparable {
 	public void setPreview(String preview) {
 		this.preview = preview;
 	}
+
+	public EventLane getEventLane() {
+		return new EventLane(this);
+	}	
+
+	public Lane[] getLanes() {
+		Lane[] lanes = new Lane[mode.key];
+		for(int i = 0;i < lanes.length;i++) {
+			lanes[i] = new Lane(this, i);
+		}
+		return lanes;
+	}	
 }
