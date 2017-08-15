@@ -13,8 +13,8 @@ public enum Mode {
 	BEAT_14K(14, "beat-14k", 2, 16, new int[]{7, 15}),
 	POPN_5K(9, "popn-5k", 1, 5, new int[]{}),
 	POPN_9K(9, "popn-9k", 1, 9, new int[]{}),
-	KEYBOARD_24K(24, "keyboard-24k", 1, 26, new int[]{24, 25}),	
-	KEYBOARD_48K(48, "keyboard-24k-double", 2, 52, new int[]{24, 25, 51, 52}),	
+	KEYBOARD_24K(25, "keyboard-24k", 1, 26, new int[]{24, 25}),
+	KEYBOARD_24K_DOUBLE(50, "keyboard-24k-double", 2, 52, new int[]{24, 25, 50, 51}),
 	;
 
 	public final int id;
