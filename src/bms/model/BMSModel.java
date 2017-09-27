@@ -306,26 +306,30 @@ public class BMSModel implements Comparable {
 				nlane = PMS_NORMALLANE;
 				slane = PMS_SCRATCHLANE;
 				break;
-			case KEYBOARD_24K:
-				if (side == 1) {
-					nlane = KB_24KEY_NORMALLANE_1P;
-					slane = KB_24KEY_SCRATCHLANE_1P;
-				} else if (side == 2) {
-					nlane = KB_24KEY_NORMALLANE_2P;
-					slane = KB_24KEY_SCRATCHLANE_2P;
-				} else {
-					nlane = KB_24KEY_NORMALLANE;
-					slane = KB_24KEY_SCRATCHLANE;
-				}
-				break;
-			default:
-				if (side == 1) {
-					nlane = BMS_NORMALLANE_1P;
-					slane = BMS_SCRATCHLANE_1P;
-				} else if (side == 2) {
-					nlane = BMS_NORMALLANE_2P;
-					slane = BMS_SCRATCHLANE_2P;
-				}
+		case KEYBOARD_24K:
+			if (side == 1) {
+				nlane = KB_24KEY_NORMALLANE_1P;
+				slane = KB_24KEY_SCRATCHLANE_1P;
+			} else if (side == 2) {
+				nlane = KB_24KEY_NORMALLANE_2P;
+				slane = KB_24KEY_SCRATCHLANE_2P;
+			} else {
+				nlane = KB_24KEY_NORMALLANE;
+				slane = KB_24KEY_SCRATCHLANE;
+			}
+			break;
+		case KEYBOARD_24K_DOUBLE:
+			nlane = KB_24KEY_NORMALLANE;
+			slane = KB_24KEY_SCRATCHLANE;
+			break;
+		default:
+			if (side == 1) {
+				nlane = BMS_NORMALLANE_1P;
+				slane = BMS_SCRATCHLANE_1P;
+			} else if (side == 2) {
+				nlane = BMS_NORMALLANE_2P;
+				slane = BMS_SCRATCHLANE_2P;
+			}
 		}
 		return new int[][] { nlane, slane };
 	}
