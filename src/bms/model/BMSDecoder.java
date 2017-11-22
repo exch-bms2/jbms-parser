@@ -16,14 +16,9 @@ import java.util.logging.Logger;
  */
 public class BMSDecoder {
 
-	private final CommandWord[] reserve;
-
 	private int lntype;
 
 	private List<DecodeLog> log = new ArrayList<DecodeLog>();
-
-	private int lnobj;
-	private int lnmode;
 
 	final List<String> wavlist = new ArrayList<String>();
 	private final int[] wm = new int[36 * 36];
@@ -40,152 +35,6 @@ public class BMSDecoder {
 	public BMSDecoder(int lntype) {
 		this.lntype = lntype;
 		// 予約語の登録
-		List<CommandWord> reserve = new ArrayList<CommandWord>();
-		reserve.add(new CommandWord("PLAYER") {
-			public void execute(BMSModel model, String arg) {
-				try {
-					model.setPlayer(Integer.parseInt(arg));
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYERに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#PLAYER :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("GENRE") {
-			public void execute(BMSModel model, String arg) {
-				model.setGenre(arg);
-			}
-		});
-		reserve.add(new CommandWord("TITLE") {
-			public void execute(BMSModel model, String arg) {
-				model.setTitle(arg);
-			}
-		});
-		reserve.add(new CommandWord("SUBTITLE") {
-			public void execute(BMSModel model, String arg) {
-				model.setSubTitle(arg);
-			}
-		});
-		reserve.add(new CommandWord("ARTIST") {
-			public void execute(BMSModel model, String arg) {
-				model.setArtist(arg);
-			}
-		});
-		reserve.add(new CommandWord("SUBARTIST") {
-			public void execute(BMSModel model, String arg) {
-				model.setSubArtist(arg);
-			}
-		});
-		reserve.add(new CommandWord("PLAYLEVEL") {
-			public void execute(BMSModel model, String arg) {
-				model.setPlaylevel(arg);
-			}
-		});
-		reserve.add(new CommandWord("RANK") {
-			public void execute(BMSModel model, String arg) {
-				if(model.getJudgerank() >= 10) {
-					return;
-				}
-				try {
-					final int rank = Integer.parseInt(arg);
-					if (rank >= 0 && rank < 5) {
-						model.setJudgerank(rank);
-					} else {
-						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#RANKに規定外の数字が定義されています : " + rank));
-					}
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#RANKに数字が定義されていません"));
-					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#RANK :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("DEFEXRANK") {
-			public void execute(BMSModel model, String arg) {
-				try {
-					final int rank = Integer.parseInt(arg);
-					if (rank >= 10) {
-						model.setJudgerank(rank);
-					} else {
-						log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#DEFEXRANK 10以下はサポートしていません" + rank));
-					}
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#DEFEXRANKに数字が定義されていません"));
-					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#DEFEXRANK :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("TOTAL") {
-			public void execute(BMSModel model, String arg) {
-				try {
-					model.setTotal(Double.parseDouble(arg));
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#TOTALに数字が定義されていません"));
-					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#TOTAL :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("VOLWAV") {
-			public void execute(BMSModel model, String arg) {
-				try {
-					model.setVolwav(Integer.parseInt(arg));
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#VOLWAVに数字が定義されていません"));
-					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#VOLWAV :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("STAGEFILE") {
-			public void execute(BMSModel model, String arg) {
-				model.setStagefile(arg.replace('\\', '/'));
-			}
-		});
-		reserve.add(new CommandWord("BACKBMP") {
-			public void execute(BMSModel model, String arg) {
-				model.setBackbmp(arg.replace('\\', '/'));
-			}
-		});
-		reserve.add(new CommandWord("PREVIEW") {
-			public void execute(BMSModel model, String arg) {
-				model.setPreview(arg.replace('\\', '/'));
-			}
-		});
-		reserve.add(new CommandWord("LNOBJ") {
-			public void execute(BMSModel model, String arg) {
-				lnobj = Integer.parseInt(arg.toUpperCase(), 36);
-			}
-		});
-		reserve.add(new CommandWord("LNMODE") {
-			public void execute(BMSModel model, String arg) {
-				try {
-					lnmode = Integer.parseInt(arg);
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYERに数字が定義されていません"));
-					Logger.getGlobal().warning("BMSファイルの解析中の例外:#PLAYER :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("DIFFICULTY") {
-			public void execute(BMSModel model, String arg) {
-				try {
-					model.setDifficulty(Integer.parseInt(arg));
-				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "#DIFFICULTYに数字が定義されていません"));
-					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#DIFFICULTY :" + arg);
-				}
-			}
-		});
-		reserve.add(new CommandWord("BANNER") {
-			public void execute(BMSModel model, String arg) {
-				model.setBanner(arg.replace('\\', '/'));
-			}
-		});
-		reserve.add(new CommandWord("COMMENT") {
-			public void execute(BMSModel model, String arg) {
-				// TODO 未実装
-			}
-		});
-
-		this.reserve = reserve.toArray(new CommandWord[reserve.size()]);
 	}
 
 	public BMSModel decode(File f) {
@@ -220,14 +69,12 @@ public class BMSDecoder {
 
 	/**
 	 * 指定したBMSファイルをモデルにデコードする
-	 * 
-	 * @param f
+	 *
+	 * @param data
 	 * @return
 	 */
 	public BMSModel decode(byte[] data, boolean ispms, int[] random) {
 		log.clear();
-		lnobj = -1;
-		lnmode = 0;
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
 		stoptable.clear();
@@ -396,9 +243,13 @@ public class BMSDecoder {
 							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:#STOPxxは不十分な定義です : " + line);
 						}
 					} else {
-						for (CommandWord cw : reserve) {
-							if (line.length() > cw.str.length() + 2 && matchesReserveWord(line, cw.str)) {
-								cw.execute(model, line.substring(cw.str.length() + 2).trim());
+						for (CommandWord cw : CommandWord.values()) {
+							if (line.length() > cw.name().length() + 2 && matchesReserveWord(line, cw.name())) {
+								DecodeLog log = cw.execute(model, line.substring(cw.name().length() + 2).trim());
+								if(log != null) {
+									this.log.add(log);
+									Logger.getGlobal().warning(model.getTitle() + " - " + log.getMessage() + " : " + line);
+								}
 								break;
 							}
 						}
@@ -425,7 +276,7 @@ public class BMSDecoder {
 			timelines.put(0.0, basetl);
 			timecache.put(0.0, 0.0);
 			for(Section section : sections) {
-				section.makeTimeLines(wm, bm, lnobj, lnmode, timelines, timecache);
+				section.makeTimeLines(wm, bm, timelines, timecache);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
@@ -565,17 +416,176 @@ public class BMSDecoder {
 
 /**
  * 予約語
- * 
+ *
  * @author exch
  */
-abstract class CommandWord {
+enum CommandWord {
 
-	public final String str;
+	PLAYER {
+		@Override
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				model.setPlayer(Integer.parseInt(arg));
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYERに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	GENRE {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setGenre(arg);
+			return null;
+		}
+	},
+	TITLE {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setTitle(arg);
+			return null;
+		}
+	},
+	SUBTITLE {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setSubTitle(arg);
+			return null;
+		}
+	},
+	ARTIST {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setArtist(arg);
+			return null;
+		}
+	},
+	SUBARTIST {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setSubArtist(arg);
+			return null;
+		}
+	},
+	PLAYLEVEL {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setPlaylevel(arg);
+			return null;
+		}
+	},
+	RANK {
+		public DecodeLog execute(BMSModel model, String arg) {
+			if(model.getJudgerank() >= 10) {
+				return null;
+			}
+			try {
+				final int rank = Integer.parseInt(arg);
+				if (rank >= 0 && rank < 5) {
+					model.setJudgerank(rank);
+				} else {
+					return new DecodeLog(DecodeLog.STATE_WARNING, "#RANKに規定外の数字が定義されています : " + rank);
+				}
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#RANKに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	DEFEXRANK {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				final int rank = Integer.parseInt(arg);
+				if (rank >= 10) {
+					model.setJudgerank(rank);
+				} else {
+					return new DecodeLog(DecodeLog.STATE_WARNING, "#DEFEXRANK 10以下はサポートしていません" + rank);
+				}
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#DEFEXRANKに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	TOTAL {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				model.setTotal(Double.parseDouble(arg));
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#TOTALに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	VOLWAV {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				model.setVolwav(Integer.parseInt(arg));
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#VOLWAVに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	STAGEFILE {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setStagefile(arg.replace('\\', '/'));
+			return null;
+		}
+	},
+	BACKBMP {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setBackbmp(arg.replace('\\', '/'));
+			return null;
+		}
+	},
+	PREVIEW {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setPreview(arg.replace('\\', '/'));
+			return null;
+		}
+	},
+	LNOBJ {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				model.setLnobj(Integer.parseInt(arg.toUpperCase(), 36));
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYERに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	LNMODE {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				int lnmode = Integer.parseInt(arg);
+				if(lnmode < 0 || lnmode > 2) {
+					return new DecodeLog(DecodeLog.STATE_WARNING, "#LNMODEに無効な数字が定義されています");
+				}
+				model.setLnmode(lnmode);
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#PLAYERに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	DIFFICULTY {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				model.setDifficulty(Integer.parseInt(arg));
+			} catch (NumberFormatException e) {
+				return new DecodeLog(DecodeLog.STATE_WARNING, "#DIFFICULTYに数字が定義されていません");
+			}
+			return null;
+		}
+	},
+	BANNER {
+		public DecodeLog execute(BMSModel model, String arg) {
+			model.setBanner(arg.replace('\\', '/'));
+			return null;
+		}
+	},
+	COMMENT {
+		public DecodeLog execute(BMSModel model, String arg) {
+			// TODO 未実装
+			return null;
+		}
+	};
 
-	public CommandWord(String s) {
-		str = s;
-	}
-
-	public abstract void execute(BMSModel model, String arg);
+	public abstract DecodeLog execute(BMSModel model, String arg);
 
 }

@@ -94,6 +94,9 @@ public class BMSModel implements Comparable {
 	private String[] bgamap = new String[0];
 
 	private int lntype;
+	private int lnmode = LongNote.TYPE_UNDEFINED;
+
+	private int lnobj = -1;
 
 	public static final int LNTYPE_LONGNOTE = 0;
 	public static final int LNTYPE_CHARGENOTE = 1;
@@ -695,5 +698,21 @@ public class BMSModel implements Comparable {
 			lanes[i] = new Lane(this, i);
 		}
 		return lanes;
-	}	
+	}
+
+	public int getLnobj() {
+		return lnobj;
+	}
+
+	public void setLnobj(int lnobj) {
+		this.lnobj = lnobj;
+	}
+
+	public int getLnmode() {
+		return lnmode;
+	}
+
+	public void setLnmode(int lnmode) {
+		this.lnmode = lnmode;
+	}
 }

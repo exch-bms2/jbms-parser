@@ -378,7 +378,9 @@ public class Section {
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(int[] wavmap, int[] bgamap, int lnobj, int lnmode, TreeMap<Double, TimeLine> tlcache, TreeMap<Double, Double> timecache) {
+	public void makeTimeLines(int[] wavmap, int[] bgamap, TreeMap<Double, TimeLine> tlcache, TreeMap<Double, Double> timecache) {
+		final int lnobj = model.getLnobj();
+		final int lnmode = model.getLnmode();
 		this.tlcache = tlcache;
 		this.timecache = timecache;
 		final int[] startln = this.getStartLNStatus().clone();
