@@ -1,7 +1,6 @@
 package bms.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 /**
  * ノート
@@ -10,6 +9,7 @@ import java.util.List;
  */
 public abstract class Note implements Cloneable {
 	
+	public static final Note[] EMPTYARRAY = new Note[0];
 	/**
 	 * ノートが配置されている小節
 	 */
@@ -40,7 +40,7 @@ public abstract class Note implements Cloneable {
 	 */
 	private long playtime;
 
-	private List<Note> notes = new ArrayList();
+	private Note[] notes = EMPTYARRAY;
 
 	public int getWav() {
 		return wav;
@@ -111,10 +111,11 @@ public abstract class Note implements Cloneable {
 	}
 
 	public void addLayeredNote(Note n) {
-		notes.add(n);
+		notes = Arrays.copyOf(notes, notes.length + 1);
+		notes[notes.length - 1] = n;
 	}
 
-	public List<Note> getLayeredNotes() {
+	public Note[] getLayeredNotes() {
 		return notes;
 	}
 

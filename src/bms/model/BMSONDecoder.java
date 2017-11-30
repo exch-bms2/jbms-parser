@@ -157,11 +157,11 @@ public class BMSONDecoder {
 				}
 			}
 
-			List<String> wavmap = new ArrayList<String>(bmson.sound_channels.length);
+			String[] wavmap = new String[bmson.sound_channels.length];
 			int id = 0;
 			long starttime = 0;
 			for (SoundChannel sc : bmson.sound_channels) {
-				wavmap.add(sc.name);
+				wavmap[id] = sc.name;
 				Arrays.sort(sc.notes, comparator);
 				final int length = sc.notes.length;
 				for (int i = 0; i < length; i++) {
@@ -267,7 +267,7 @@ public class BMSONDecoder {
 				}
 				id++;
 			}
-			model.setWavList(wavmap.toArray(new String[wavmap.size()]));
+			model.setWavList(wavmap);
 			// BGA処理
 			if (bmson.bga != null && bmson.bga.bga_header != null) {
 				final String[] bgamap = new String[bmson.bga.bga_header.length];

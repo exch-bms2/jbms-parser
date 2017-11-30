@@ -20,10 +20,10 @@ public class BMSDecoder {
 
 	private List<DecodeLog> log = new ArrayList<DecodeLog>();
 
-	final List<String> wavlist = new ArrayList<String>();
+	final List<String> wavlist = new ArrayList<String>(36 * 36);
 	private final int[] wm = new int[36 * 36];
 
-	final List<String> bgalist = new ArrayList<String>();
+	final List<String> bgalist = new ArrayList<String>(36 * 36);
 	private final int[] bm = new int[36 * 36];
 
 	private BMSGenerator generator;
