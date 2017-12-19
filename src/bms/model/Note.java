@@ -111,6 +111,11 @@ public abstract class Note implements Cloneable {
 	}
 
 	public void addLayeredNote(Note n) {
+		if(n == null) {
+			return;
+		}
+		n.setSection(section);
+		n.setTime(time);
 		notes = Arrays.copyOf(notes, notes.length + 1);
 		notes[notes.length - 1] = n;
 	}

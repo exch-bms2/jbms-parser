@@ -29,7 +29,7 @@ public class TimeLine {
 	/**
 	 * タイムライン上に配置されているBGMノート
 	 */
-	private List<Note> bgnotes = new ArrayList<Note>();
+	private Note[] bgnotes = Note.EMPTYARRAY;
 	/**
 	 * 小節線の有無
 	 */
@@ -167,6 +167,11 @@ public class TimeLine {
 
 	public void setHiddenNote(int lane, Note note) {
 		hiddennotes[lane] = note;
+		if(note == null) {
+			return;
+		}
+		note.setSection(section);
+		note.setTime(time);
 	}
 
 	public boolean existHiddenNote() {
@@ -183,15 +188,33 @@ public class TimeLine {
 	}
 
 	public void addBackGroundNote(Note note) {
-		bgnotes.add(note);
+		if(note == null) {
+			return;
+		}
+		note.setSection(section);
+		note.setTime(time);
+		bgnotes = Arrays.copyOf(bgnotes, bgnotes.length + 1);
+		bgnotes[bgnotes.length - 1] = note;
 	}
 
 	public void removeBackGroundNote(Note note) {
-		bgnotes.remove(note);
+		for(int i = 0;i < bgnotes.length;i++) {
+			if(bgnotes[i] == note) {
+				final Note[] newbg = new Note[bgnotes.length - 1];
+				for(int j = 0, index = 0;j < bgnotes.length;j++) {
+					if(i != j) {
+						newbg[index] = bgnotes[j];
+						index++;
+					}
+				}
+				bgnotes = newbg;
+				break;
+			}
+		}
 	}
 
 	public Note[] getBackGroundNotes() {
-		return bgnotes.toArray(new Note[bgnotes.size()]);
+		return bgnotes;
 	}
 
 	public void setBPM(double bpm) {
