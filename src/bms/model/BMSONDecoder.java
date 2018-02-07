@@ -90,6 +90,9 @@ public class BMSONDecoder {
 					break;
 				}
 			}
+			if(bmson.ln_type > 0 && bmson.ln_type <= 3) {
+				model.setLnmode(bmson.ln_type);				
+			}
 			final int[] keyassign;
 			switch(model.getMode()) {
 			case BEAT_5K:
@@ -186,6 +189,18 @@ public class BMSONDecoder {
 					if (key < 0) {
 						// BGノート
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
+					} else if(n.up){
+						if (lnlist[key] != null) {
+							final double section = (n.y / resolution);
+							for (LongNote ln : lnlist[key]) {
+								if (section == ln.getPair().getSection()) {
+									ln.getPair().setWav(id);
+									ln.getPair().setStarttime(starttime);
+									ln.getPair().setDuration(duration);
+									break;
+								}
+							}
+						}						
 					} else {
 						boolean insideln = false;
 						if (lnlist[key] != null) {
@@ -238,7 +253,7 @@ public class BMSONDecoder {
 										// start.getTime());
 										LongNote lnend = new LongNote(-2);
 										end.setNote(key, lnend);
-										ln.setType(n.t);
+										ln.setType(n.t > 0 && n.t <= 3 ? n.t : model.getLnmode());
 										ln.setPair(lnend);										
 										if (lnlist[key] == null) {
 											lnlist[key] = new ArrayList<LongNote>();

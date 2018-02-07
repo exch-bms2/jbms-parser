@@ -19,4 +19,6 @@ public class Note  extends BMSONObject {
 	public boolean c;
 	
 	public int t; // as type
+	
+	public boolean up = false;
 }
