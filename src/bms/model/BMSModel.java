@@ -1,7 +1,5 @@
 package bms.model;
 
-import java.util.*;
-
 /**
  * BMSモデル
  * 
@@ -714,5 +712,64 @@ public class BMSModel implements Comparable {
 
 	public void setLnmode(int lnmode) {
 		this.lnmode = lnmode;
+	}
+	
+	public String toChartString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("JUDGERANK:" + judgerank + "\n");
+		sb.append("TOTAL:" + total + "\n");
+		if(lnmode != 0) {
+			sb.append("LNMODE:" + lnmode + "\n");			
+		}
+		double nowbpm = -Double.MIN_VALUE;
+		StringBuilder tlsb = new StringBuilder();
+		for(TimeLine tl : timelines) {
+			tlsb.setLength(0);
+			tlsb.append(tl.getTime() + ":");
+			boolean write = false;			
+			if(nowbpm != tl.getBPM()) {
+				nowbpm = tl.getBPM();
+				tlsb.append("B(" + nowbpm + ")");
+				write = true;
+			}
+			if(tl.getStop() != 0) {
+				tlsb.append("S(" + tl.getStop() + ")");
+				write = true;
+			}
+			if(tl.getSectionLine()) {
+				tlsb.append("L");
+				write = true;
+			}
+
+			tlsb.append("[");
+			for(int lane = 0;lane < mode.key;lane++) {
+				Note n = tl.getNote(lane);
+				if(n instanceof NormalNote) {
+					tlsb.append("1");
+					write = true;
+				} else if(n instanceof LongNote) {
+					LongNote ln = (LongNote)n;
+					if(!ln.isEnd()) {
+						final char[] lnchars = {'l','L','C','H'};
+						tlsb.append(lnchars[ln.getType()] + ln.getDuration());
+						write = true;
+					}
+				} else if(n instanceof MineNote) {
+					tlsb.append("m" + ((MineNote)n).getDamage());
+					write = true;					
+				} else {
+					tlsb.append("0");						
+				}
+				if(lane < mode.key - 1) {
+					tlsb.append(",");					
+				}
+			}
+			tlsb.append("]\n");
+			
+			if(write) {
+				sb.append(tlsb);
+			}
+		}
+		return sb.toString();
 	}
 }
