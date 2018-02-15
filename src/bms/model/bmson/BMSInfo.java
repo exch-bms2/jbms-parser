@@ -24,6 +24,8 @@ public class BMSInfo {
 	public String preview_music = ""; // preview music filename
 	public int resolution = 240; // pulses per quarter note
 
+    public int ln_type;        // LN type
+
 	public int getJudgeRank() {
 		return judge_rank;
 	}

@@ -90,8 +90,8 @@ public class BMSONDecoder {
 					break;
 				}
 			}
-			if(bmson.ln_type > 0 && bmson.ln_type <= 3) {
-				model.setLnmode(bmson.ln_type);				
+			if(bmson.info.ln_type > 0 && bmson.info.ln_type <= 3) {
+				model.setLnmode(bmson.info.ln_type);				
 			}
 			final int[] keyassign;
 			switch(model.getMode()) {
