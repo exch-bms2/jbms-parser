@@ -553,7 +553,7 @@ enum CommandWord {
 		public DecodeLog execute(BMSModel model, String arg) {
 			try {
 				int lnmode = Integer.parseInt(arg);
-				if(lnmode < 0 || lnmode > 2) {
+				if(lnmode < 0 || lnmode > 3) {
 					return new DecodeLog(DecodeLog.STATE_WARNING, "#LNMODEに無効な数字が定義されています");
 				}
 				model.setLnmode(lnmode);
