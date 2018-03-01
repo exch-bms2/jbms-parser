@@ -139,8 +139,12 @@ public class Section {
 			// 小節の拡大率
 			case SECTION_RATE:
 				int colon_index = line.indexOf(":");
-				line = line.substring(colon_index + 1, line.length());
-				rate = Double.valueOf(line);
+				try {
+					rate = Double.valueOf(line.substring(colon_index + 1, line.length()));					
+				} catch (NumberFormatException e) {
+					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "小節の拡大率が不正です : " + line));
+					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:小節の拡大率が不正です - " + line);					
+				}
 				break;
 			// BPM変化
 			case BPM_CHANGE:
