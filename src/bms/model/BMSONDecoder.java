@@ -9,7 +9,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
+import static bms.model.DecodeLog.State.*;
 
+import bms.model.BMSDecoder.TimeLineCache;
 import bms.model.bmson.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,8 +31,7 @@ public class BMSONDecoder {
 
 	private List<DecodeLog> log = new ArrayList<DecodeLog>();
 
-	private final TreeMap<Integer, TimeLine> tlcache = new TreeMap<Integer, TimeLine>();
-	private final TreeMap<Integer, Double> timecache = new TreeMap<Integer, Double>();
+	private final TreeMap<Integer, TimeLineCache> tlcache = new TreeMap<Integer, TimeLineCache>();
 
 	public BMSONDecoder(int lntype) {
 		this.lntype = lntype;
@@ -44,7 +45,6 @@ public class BMSONDecoder {
 		Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.toString());
 		log.clear();
 		tlcache.clear();
-		timecache.clear();
 		final long currnttime = System.currentTimeMillis();
 		// BMS読み込み、ハッシュ値取得
 		model = new BMSModel();
@@ -74,8 +74,7 @@ public class BMSONDecoder {
 		model.setGenre(bmson.info.genre);
 		model.setJudgerank(bmson.info.judge_rank);
 		if (model.getJudgerank() < 5) {
-			Logger.getGlobal().warning("judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + model.getJudgerank());
-			log.add(new DecodeLog(DecodeLog.STATE_WARNING, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + model.getJudgerank()));
+			log.add(new DecodeLog(WARNING, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + model.getJudgerank()));
 		}
 		model.setTotal(bmson.info.total);
 		model.setBpm(bmson.info.init_bpm);
@@ -113,8 +112,7 @@ public class BMSONDecoder {
 		model.setPreview(bmson.info.preview_music);
 		final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 		basetl.setBPM(model.getBpm());
-		tlcache.put(0, basetl);
-		timecache.put(0, 0.0);
+		tlcache.put(0, new TimeLineCache(0.0, basetl));
 
 		if (bmson.bpm_events == null) {
 			bmson.bpm_events = new BpmEvent[0];
@@ -211,8 +209,7 @@ public class BMSONDecoder {
 					}
 
 					if (insideln) {
-						Logger.getGlobal().warning("LN内にノートを定義しています - x :  " + n.x + " y : " + n.y);
-						log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+						log.add(new DecodeLog(WARNING,
 								"LN内にノートを定義しています - x :  " + n.x + " y : " + n.y));
 						tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 					} else {
@@ -226,21 +223,19 @@ public class BMSONDecoder {
 								if (en instanceof LongNote && end.getNote(key) == ((LongNote) en).getPair()) {
 									en.addLayeredNote(ln);
 								} else {
-									Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-									log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+									log.add(new DecodeLog(WARNING,
 											"同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y));
 								}
 							} else {
 								boolean existNote = false;
-								for (TimeLine tl2 : tlcache.subMap(n.y, false, n.y + n.l, true).values()) {
-									if (tl2.existNote(key)) {
+								for (TimeLineCache tl2 : tlcache.subMap(n.y, false, n.y + n.l, true).values()) {
+									if (tl2.timeline.existNote(key)) {
 										existNote = true;
 										break;
 									}
 								}
 								if (existNote) {
-									Logger.getGlobal().warning("LN内にノートを定義しています - x :  " + n.x + " y : " + n.y);
-									log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+									log.add(new DecodeLog(WARNING,
 											"LN内にノートを定義しています - x :  " + n.x + " y : " + n.y));
 									tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 								} else {
@@ -263,8 +258,7 @@ public class BMSONDecoder {
 								if (tl.getNote(key) instanceof NormalNote) {
 									tl.getNote(key).addLayeredNote(new NormalNote(id, starttime, duration));
 								} else {
-									Logger.getGlobal().warning("同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y);
-									log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+									log.add(new DecodeLog(WARNING,
 											"同一の位置にノートが複数定義されています - x :  " + n.x + " y : " + n.y));
 								}
 							} else {
@@ -314,22 +308,21 @@ public class BMSONDecoder {
 
 	private TimeLine getTimeLine(int y, double resolution) {
 		// Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
-		final TimeLine tlc = tlcache.get(y);
+		final TimeLineCache tlc = tlcache.get(y);
 		if (tlc != null) {
-			return tlc;
+			return tlc.timeline;
 		}
 
-		Entry<Integer, TimeLine> le = tlcache.lowerEntry(y);
-		double bpm = le.getValue().getBPM();
-		double time = timecache.get(le.getKey()) + le.getValue().getMicroStop()
+		Entry<Integer, TimeLineCache> le = tlcache.lowerEntry(y);
+		double bpm = le.getValue().timeline.getBPM();
+		double time = le.getValue().time + le.getValue().timeline.getMicroStop()
 				+ (240000.0 * 1000 * ((y - le.getKey()) / resolution)) / bpm;
 
 		TimeLine tl = new TimeLine(y / resolution, (long) time, model.getMode().key);
 		tl.setBPM(bpm);
-		tlcache.put(y, tl);
-		timecache.put(y, time);
+		tlcache.put(y, new TimeLineCache(time, tl));
 		// System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +
 		// tl.getTime());
 		return tl;
-	}
+	}	
 }

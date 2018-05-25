@@ -2,7 +2,10 @@ package bms.model;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
+
+import bms.model.BMSDecoder.TimeLineCache;
+
+import static bms.model.DecodeLog.State.*;
 
 /**
  * 小節
@@ -128,8 +131,7 @@ public class Section {
 				}
 
 			} catch (NumberFormatException e) {
-				log.add(new DecodeLog(DecodeLog.STATE_WARNING, "チャンネル定義が無効です : " + line));
-				Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:チャンネル定義が無効です - " + line);
+				log.add(new DecodeLog(WARNING, "チャンネル定義が無効です : " + line));
 			}
 			switch (channel) {
 			// BGレーン
@@ -142,8 +144,7 @@ public class Section {
 				try {
 					rate = Double.valueOf(line.substring(colon_index + 1, line.length()));					
 				} catch (NumberFormatException e) {
-					log.add(new DecodeLog(DecodeLog.STATE_WARNING, "小節の拡大率が不正です : " + line));
-					Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:小節の拡大率が不正です - " + line);					
+					log.add(new DecodeLog(WARNING, "小節の拡大率が不正です : " + line));
 				}
 				break;
 			// BPM変化
@@ -176,8 +177,7 @@ public class Section {
 						if (bpm != null) {
 							bpmchange.put((double) j / bpmdatas.length, bpm);
 						} else {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "未定義のBPM変化を参照しています : " + bpmdatas[j]));
-							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:未定義のBPM変化を参照しています :  " + bpmdatas[j]);
+							log.add(new DecodeLog(WARNING, "未定義のBPM変化を参照しています : " + bpmdatas[j]));
 						}
 					}
 				}
@@ -191,8 +191,7 @@ public class Section {
 						if (st != null) {
 							stop.put((double) j / stopdatas.length, st);
 						} else {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "未定義のSTOPを参照しています : " + stopdatas[j]));
-							Logger.getGlobal().warning(model.getTitle() + ":BMSファイルの解析中の例外:未定義のSTOPを参照しています :  " + stopdatas[j]);
+							log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + stopdatas[j]));
 						}
 					}
 				}
@@ -294,7 +293,7 @@ public class Section {
 				result[i] = BMSDecoder.parseInt36(line, findex + i * 2);
 			}
 		} catch(NumberFormatException e) {
-			Logger.getGlobal().warning(model.getTitle() + ":チャンネル定義中の不正な値:" + line);
+			log.add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
 		}
 		return result;			
 	}
@@ -335,9 +334,8 @@ public class Section {
 						} else if (nowln == play1[j]) {
 							nowln = 0;
 						} else {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
+							log.add(new DecodeLog(WARNING, "LNの対応が取れていません : " + nowln + " - "
 									+ play1[j]));
-							Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play1[j]);
 							nowln = 0;
 						}
 					}
@@ -356,9 +354,8 @@ public class Section {
 						} else if (nowln == play2[j]) {
 							nowln = 0;
 						} else {
-							log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNの対応が取れていません : " + nowln + " - "
+							log.add(new DecodeLog(WARNING, "LNの対応が取れていません : " + nowln + " - "
 									+ play2[j]));
-							Logger.getGlobal().warning(model.getTitle() + ":LNの対応が取れていません:" + nowln + " - " + play2[j]);
 							nowln = 0;
 						}
 					}
@@ -372,21 +369,19 @@ public class Section {
 	private final TreeMap<Double, Double> bpmchange = new TreeMap<Double, Double>();
 	private final TreeMap<Double, Double> stop = new TreeMap<Double, Double>();
 	
-	public static final int[] NOTEASSIGN_BEAT5 = { 0, 1, 2, 3, 4, -1, -1, 5, -1, 6, 7, 8, 9, 10, -1, -1, 11, -1 };
-	public static final int[] NOTEASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, 12, 13, 14, 15, -1 };
-	public static final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, -1,-1,-1,-1,-1, 5, 6, 7, 8,-1,-1,-1,-1 };
+	private final int[] NOTEASSIGN_BEAT5 = { 0, 1, 2, 3, 4, -1, -1, 5, -1, 6, 7, 8, 9, 10, -1, -1, 11, -1 };
+	private final int[] NOTEASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, 12, 13, 14, 15, -1 };
+	private final int[] NOTEASSIGN_POPN = { 0, 1, 2, 3, 4, -1,-1,-1,-1,-1, 5, 6, 7, 8,-1,-1,-1,-1 };
 
-	private TreeMap<Double, TimeLine> tlcache;
-	private TreeMap<Double, Double> timecache;
+	private TreeMap<Double, TimeLineCache> tlcache;
 
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(int[] wavmap, int[] bgamap, TreeMap<Double, TimeLine> tlcache, TreeMap<Double, Double> timecache) {
+	public void makeTimeLines(int[] wavmap, int[] bgamap, TreeMap<Double, TimeLineCache> tlcache) {
 		final int lnobj = model.getLnobj();
 		final int lnmode = model.getLnmode();
 		this.tlcache = tlcache;
-		this.timecache = timecache;
 		final int[] startln = this.getStartLNStatus().clone();
 		final int[] assign = model.getMode() == Mode.POPN_9K ? NOTEASSIGN_POPN : 
 			(model.getMode() == Mode.BEAT_7K || model.getMode() == Mode.BEAT_14K ? NOTEASSIGN_BEAT7 : NOTEASSIGN_BEAT5);
@@ -460,20 +455,17 @@ public class Section {
 						final int key = assign[keys];
 						if(key != -1) {
 							if (tl.existNote(key)) {
-								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
+								log.add(new DecodeLog(WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
 										+ tl.getTime()));
-								Logger.getGlobal().warning(
-										model.getTitle() + ":通常ノート追加時に衝突が発生しました。" + (key + 1) + ":"
-												+ tl.getTime());
 							}
 							if (s[i] == lnobj) {
 								// LN終端処理
 								// TODO 高速化のために直前のノートを記録しておく
-								for (Map.Entry<Double, TimeLine> e : tlcache.descendingMap().entrySet()) {
+								for (Map.Entry<Double, TimeLineCache> e : tlcache.descendingMap().entrySet()) {
 									if(e.getKey() >= tl.getSection() ) {
 										continue;
 									}
-									final TimeLine tl2 = e.getValue();
+									final TimeLine tl2 = e.getValue().timeline;
 									if (tl2.existNote(key)) {
 										final Note note = tl2.getNote(key);
 										if (note instanceof NormalNote) {
@@ -486,20 +478,14 @@ public class Section {
 											ln.setPair(lnend);
 											break;
 										} else if (note instanceof LongNote && ((LongNote) note).getSection() == tl2.getSection()) {
-											log.add(new DecodeLog(DecodeLog.STATE_WARNING,
+											log.add(new DecodeLog(WARNING,
 													"LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + key + " - Time(ms):"
 															+ tl2.getTime()));
-											Logger.getGlobal().warning(
-													model.getTitle() + ":LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン:" + key
-															+ " - Time(ms):" + tl2.getTime());
 											tl.setNote(key, note);
 											break;
 										} else {
-											log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
+											log.add(new DecodeLog(WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
 													+ " - Time(ms):" + tl2.getTime()));
-											Logger.getGlobal().warning(
-													model.getTitle() + ":LNオブジェクトの対応が取れません。レーン:" + key + " - Time(ms):"
-															+ tl2.getTime());
 											break;
 										}
 									}
@@ -525,11 +511,11 @@ public class Section {
 								startln[keys - 36] = s[i];
 							} else {
 								// LN終端処理
-								for (Map.Entry<Double, TimeLine> e : tlcache.descendingMap().entrySet()) {
+								for (Map.Entry<Double, TimeLineCache> e : tlcache.descendingMap().entrySet()) {
 									if(e.getKey() >= tl.getSection()) {
 										continue;
 									}
-									final TimeLine tl2 = e.getValue();
+									final TimeLine tl2 = e.getValue().timeline;
 									if (tl2.existNote(key)) {
 										Note note = tl2.getNote(key);
 										if (note instanceof LongNote) {
@@ -540,11 +526,8 @@ public class Section {
 											startln[keys - 36] = 0;
 											break;
 										} else {
-											log.add(new DecodeLog(DecodeLog.STATE_WARNING, "LN内に通常ノートが存在します。レーン: "
+											log.add(new DecodeLog(WARNING, "LN内に通常ノートが存在します。レーン: "
 													+ (key + 1) + " - Time(ms):" + tl2.getTime()));
-											Logger.getGlobal().warning(
-													model.getTitle() + ":LN内に通常ノートが存在します!" + (key + 1) + ":"
-															+ tl2.getTime());
 											tl2.setNote(key, null);
 											if(note instanceof NormalNote) {
 												tl2.addBackGroundNote(note);
@@ -560,11 +543,8 @@ public class Section {
 							// 地雷ノート処理
 							// TODO bug:既に出来ているLN内に地雷定義される可能性あり
 							if (tl.existNote(key)) {
-								log.add(new DecodeLog(DecodeLog.STATE_WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
+								log.add(new DecodeLog(WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
 										+ tl.getTime()));
-								Logger.getGlobal().warning(
-										model.getTitle() + ":地雷ノート追加時に衝突が発生しました。" + (key + 1) + ":"
-												+ tl.getTime());
 							}
 							tl.setNote(key, new MineNote(wavmap[0], s[i]));
 						}
@@ -581,19 +561,18 @@ public class Section {
 	}
 	
 	private TimeLine getTimeLine(double section) {
-		final TimeLine tlc = tlcache.get(section);
+		final TimeLineCache tlc = tlcache.get(section);
 		if (tlc != null) {
-			return tlc;
+			return tlc.timeline;
 		}
 		
-		Entry<Double, TimeLine> le = tlcache.lowerEntry(section);
-		double bpm = le.getValue().getBPM();
-		double time = timecache.get(le.getKey()) + le.getValue().getMicroStop() + (240000.0 * 1000 * (section  - le.getKey())) / bpm;			
+		Entry<Double, TimeLineCache> le = tlcache.lowerEntry(section);
+		double bpm = le.getValue().timeline.getBPM();
+		double time = le.getValue().time + le.getValue().timeline.getMicroStop() + (240000.0 * 1000 * (section  - le.getKey())) / bpm;			
 		
 		TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
 		tl.setBPM(bpm);
-		tlcache.put(section, tl);
-		timecache.put(section, time);
+		tlcache.put(section, new TimeLineCache(time, tl));
 		return tl;
 	}
 }
