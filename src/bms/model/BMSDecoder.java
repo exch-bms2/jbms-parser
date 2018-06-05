@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Time;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -290,7 +291,12 @@ public class BMSDecoder {
 		// Logger.getGlobal().info(
 		// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
 		final int[] lastlnstatus = prev.getEndLNStatus(prev);
-		final TimeLine[] tl = timelines.values().toArray(new TimeLine[timelines.size()]);
+		TimeLine[] tl = new TimeLine[timelines.size()];
+		int tlcount = 0;
+		for(TimeLineCache tlc : timelines.values()) {
+			tl[tlcount] = tlc.timeline;
+			tlcount++;
+		}
 		model.setAllTimeLine(tl);
 
 		for (int i = 0; i < 18; i++) {
