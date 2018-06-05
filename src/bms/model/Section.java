@@ -158,7 +158,7 @@ public class Section {
 				break;
 			// BGAレーン
 			case BGA_PLAY:
-				bga = this.splitData(line);
+				bga = this.mergeData(bga, this.splitData(line));
 				break;
 			// POORアニメーション
 			case POOR_PLAY:
@@ -166,7 +166,7 @@ public class Section {
 				break;
 			// レイヤー
 			case LAYER_PLAY:
-				layer = this.splitData(line);
+				layer = this.mergeData(layer, this.splitData(line));
 				break;
 			// BPM変化(拡張)
 			case BPM_CHANGE_EXTEND:
