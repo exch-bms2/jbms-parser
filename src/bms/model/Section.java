@@ -163,6 +163,21 @@ public class Section {
 			// POORアニメーション
 			case POOR_PLAY:
 				poor = this.splitData(line);
+				// アニメーションが単一画像のみの定義の場合、0を除外する(ミスレイヤーチャンネルの定義が曖昧)
+				int singleid = 0;
+				for(int id : poor) {
+					if(id != 0) {
+						if(singleid != 0 && singleid != id) {
+							singleid = -1;
+							break;
+						} else {
+							singleid = id;
+						}
+					}
+				}
+				if(singleid != -1) {
+					poor = new int[] {singleid};
+				}
 				break;
 			// レイヤー
 			case LAYER_PLAY:
