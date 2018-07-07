@@ -104,6 +104,7 @@ public class BMSONDecoder {
 			}
 		}
 		List<LongNote>[] lnlist = new List[model.getMode().key];
+		Map<bms.model.bmson.Note, LongNote> lnup = new HashMap();
 		model.setLntype(lntype);
 
 		model.setBanner(bmson.info.banner_image);
@@ -185,6 +186,8 @@ public class BMSONDecoder {
 					// BGノート
 					tl.addBackGroundNote(new NormalNote(id, starttime, duration));
 				} else if (n.up) {
+					// LN終端音定義
+					boolean assigned = false;
 					if (lnlist[key] != null) {
 						final double section = (n.y / resolution);
 						for (LongNote ln : lnlist[key]) {
@@ -192,8 +195,12 @@ public class BMSONDecoder {
 								ln.getPair().setWav(id);
 								ln.getPair().setStarttime(starttime);
 								ln.getPair().setDuration(duration);
+								assigned = true;
 								break;
 							}
+						}
+						if(!assigned) {
+							lnup.put(n, new LongNote(id, starttime, duration));
 						}
 					}
 				} else {
@@ -216,9 +223,9 @@ public class BMSONDecoder {
 						if (n.l > 0) {
 							// ロングノート
 							TimeLine end = getTimeLine(n.y + n.l, resolution);
-							LongNote ln = new LongNote(id, starttime);
-							ln.setDuration(duration);
+							LongNote ln = new LongNote(id, starttime, duration);
 							if (tl.getNote(key) != null) {
+								// レイヤーノート判定
 								bms.model.Note en = tl.getNote(key);
 								if (en instanceof LongNote && end.getNote(key) == ((LongNote) en).getPair()) {
 									en.addLayeredNote(ln);
@@ -242,7 +249,17 @@ public class BMSONDecoder {
 									tl.setNote(key, ln);
 									// ln.setDuration(end.getTime() -
 									// start.getTime());
-									LongNote lnend = new LongNote(-2);
+									LongNote lnend = null;
+									for (Entry<bms.model.bmson.Note, LongNote> up : lnup.entrySet()) {
+										if (up.getKey().y == n.y + n.l && up.getKey().x == n.x) {
+											lnend = up.getValue();
+											break;
+										}
+									}
+									if(lnend == null) {
+										lnend = new LongNote(-2);
+									}
+
 									end.setNote(key, lnend);
 									ln.setType(n.t > 0 && n.t <= 3 ? n.t : model.getLnmode());
 									ln.setPair(lnend);
@@ -298,7 +315,13 @@ public class BMSONDecoder {
 			}
 			model.setBgaList(bgamap);
 		}
-		model.setAllTimeLine(tlcache.values().toArray(new TimeLine[tlcache.size()]));
+		TimeLine[] tl = new TimeLine[tlcache.size()];
+		int tlcount = 0;
+		for(TimeLineCache tlc : tlcache.values()) {
+			tl[tlcount] = tlc.timeline;
+			tlcount++;
+		}
+		model.setAllTimeLine(tl);
 
 		Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 				+ (System.currentTimeMillis() - currnttime));
