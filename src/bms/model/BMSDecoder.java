@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Time;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -47,7 +46,7 @@ public class BMSDecoder {
 	public BMSModel decode(Path f) {
 		Logger.getGlobal().fine("BMSファイル解析開始 :" + f.toString());
 		try {
-			BMSModel model = this.decode(Files.readAllBytes(f), f.toString().toLowerCase().endsWith(".pms"), null);
+			BMSModel model = this.decode(f.toString(), Files.readAllBytes(f), f.toString().toLowerCase().endsWith(".pms"), null);
 			if (model == null) {
 				return null;
 			}
@@ -77,6 +76,16 @@ public class BMSDecoder {
 	 * @return
 	 */
 	public BMSModel decode(byte[] data, boolean ispms, int[] random) {
+		return this.decode(null, data, ispms, random);
+	}
+	
+	/**
+	 * 指定したBMSファイルをモデルにデコードする
+	 *
+	 * @param data
+	 * @return
+	 */
+	private BMSModel decode(String path, byte[] data, boolean ispms, int[] random) {
 		log.clear();
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
@@ -182,22 +191,22 @@ public class BMSDecoder {
 							try {
 								final String arg = line.substring(5).trim();
 								double bpm = Double.parseDouble(arg);
-								if(bpm < 0) {
-									bpm = Math.abs(bpm);
+								if(bpm > 0) {
+									model.setBpm(bpm);
+								} else {
 									log.add(new DecodeLog(WARNING, "#negative BPMはサポートされていません : " + line));
 								}
-								model.setBpm(bpm);
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(WARNING, "#BPMに数字が定義されていません : " + line));
 							}
 						} else {
 							try {
 								double bpm = Double.parseDouble(line.substring(7).trim());
-								if(bpm < 0) {
-									bpm = Math.abs(bpm);
-									log.add(new DecodeLog(WARNING, "#negative BPMはサポートされていません : " + line));
+								if(bpm > 0) {
+									bpmtable.put(parseInt36(line, 4), bpm);
+								} else {
+									log.add(new DecodeLog(WARNING, "#negative BPMはサポートされていません : " + line));									
 								}
-								bpmtable.put(parseInt36(line, 4), bpm);
 							} catch (NumberFormatException e) {
 								log.add(new DecodeLog(WARNING, "#BPMxxに数字が定義されていません : " + line));
 							}
@@ -258,95 +267,101 @@ public class BMSDecoder {
 					}
 				}
 			}
-		} catch (IOException e) {
-			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
-			Logger.getGlobal()
-					.severe(model.getTitle() + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
-		} catch (Exception e) {
-			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
-			Logger.getGlobal()
-					.severe(model.getTitle() + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
-			e.printStackTrace();
-		}
+			
+			model.setWavList(wavlist.toArray(new String[wavlist.size()]));
+			model.setBgaList(bgalist.toArray(new String[bgalist.size()]));
 
-		model.setWavList(wavlist.toArray(new String[wavlist.size()]));
-		model.setBgaList(bgalist.toArray(new String[bgalist.size()]));
+			Section prev = null;
+			Section[] sections = new Section[maxsec + 1];
+			for (int i = 0; i <= maxsec; i++) {
+				sections[i] = new Section(model, prev, lines[i] != null ? lines[i] : Collections.EMPTY_LIST, bpmtable,
+						stoptable, log);
+				prev = sections[i];
+			}
 
-		Section prev = null;
-		Section[] sections = new Section[maxsec + 1];
-		for (int i = 0; i <= maxsec; i++) {
-			sections[i] = new Section(model, prev, lines[i] != null ? lines[i] : Collections.EMPTY_LIST, bpmtable,
-					stoptable, log);
-			prev = sections[i];
-		}
+			final TreeMap<Double, TimeLineCache> timelines = new TreeMap<Double, TimeLineCache>();
 
-		final TreeMap<Double, TimeLineCache> timelines = new TreeMap<Double, TimeLineCache>();
+			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
+			basetl.setBPM(model.getBpm());
+			timelines.put(0.0, new TimeLineCache(0.0, basetl));
+			for (Section section : sections) {
+				section.makeTimeLines(wm, bm, timelines);
+			}
+			// Logger.getGlobal().info(
+			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
+			final int[] lastlnstatus = prev.getEndLNStatus(prev);
+			TimeLine[] tl = new TimeLine[timelines.size()];
+			int tlcount = 0;
+			for(TimeLineCache tlc : timelines.values()) {
+				tl[tlcount] = tlc.timeline;
+				tlcount++;
+			}
+			model.setAllTimeLine(tl);
 
-		final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
-		basetl.setBPM(model.getBpm());
-		timelines.put(0.0, new TimeLineCache(0.0, basetl));
-		for (Section section : sections) {
-			section.makeTimeLines(wm, bm, timelines);
-		}
-		// Logger.getGlobal().info(
-		// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
-		final int[] lastlnstatus = prev.getEndLNStatus(prev);
-		TimeLine[] tl = new TimeLine[timelines.size()];
-		int tlcount = 0;
-		for(TimeLineCache tlc : timelines.values()) {
-			tl[tlcount] = tlc.timeline;
-			tlcount++;
-		}
-		model.setAllTimeLine(tl);
+			if(tl[0].getBPM() == 0) {
+				log.add(new DecodeLog(ERROR, "開始BPMが定義されていないため、BMS解析に失敗しました"));
+				Logger.getGlobal().severe(path + ":BMSファイル解析失敗: 開始BPMが定義されていません");
+				return null;
+			}
 
-		for (int i = 0; i < 18; i++) {
-			if (lastlnstatus[i] != 0) {
-				log.add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
-				for (int index = tl.length - 1; index >= 0; index--) {
-					final Note n = tl[index].getNote(i);
-					if (n != null && n instanceof LongNote && ((LongNote) n).getPair() == null) {
-						tl[index].setNote(i, null);
-						break;
+			for (int i = 0; i < 18; i++) {
+				if (lastlnstatus[i] != 0) {
+					log.add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
+					for (int index = tl.length - 1; index >= 0; index--) {
+						final Note n = tl[index].getNote(i);
+						if (n != null && n instanceof LongNote && ((LongNote) n).getPair() == null) {
+							tl[index].setNote(i, null);
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		model.setLntype(lntype);
-		if (model.getTotal() <= 60.0) {
-			log.add(new DecodeLog(WARNING, "TOTALが未定義か、値が少なすぎます"));
-		}
-		if (tl.length > 0) {
-			if (tl[tl.length - 1].getTime() >= model.getLastTime() + 30000) {
-				log.add(new DecodeLog(WARNING, "最後のノート定義から30秒以上の余白があります"));
+			model.setLntype(lntype);
+			if (model.getTotal() <= 60.0) {
+				log.add(new DecodeLog(WARNING, "TOTALが未定義か、値が少なすぎます"));
 			}
-		}
-		if (model.getPlayer() > 1 && (model.getMode() == Mode.BEAT_5K || model.getMode() == Mode.BEAT_7K)) {
-			log.add(new DecodeLog(WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
-		}
-		if (model.getPlayer() == 1 && (model.getMode() == Mode.BEAT_10K || model.getMode() == Mode.BEAT_14K)) {
-			log.add(new DecodeLog(WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
-		}
-		model.setMD5(convertHexString(md5digest.digest()));
-		model.setSHA256(convertHexString(sha256digest.digest()));
-		log.add(new DecodeLog(INFO, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
-		Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
+			if (tl.length > 0) {
+				if (tl[tl.length - 1].getTime() >= model.getLastTime() + 30000) {
+					log.add(new DecodeLog(WARNING, "最後のノート定義から30秒以上の余白があります"));
+				}
+			}
+			if (model.getPlayer() > 1 && (model.getMode() == Mode.BEAT_5K || model.getMode() == Mode.BEAT_7K)) {
+				log.add(new DecodeLog(WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
+			}
+			if (model.getPlayer() == 1 && (model.getMode() == Mode.BEAT_10K || model.getMode() == Mode.BEAT_14K)) {
+				log.add(new DecodeLog(WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
+			}
+			model.setMD5(convertHexString(md5digest.digest()));
+			model.setSHA256(convertHexString(sha256digest.digest()));
+			log.add(new DecodeLog(INFO, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
+			Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 
-		if (random == null) {
-			random = new int[randoms.size()];
-			final Iterator<Integer> ri = randoms.iterator();
+			if (random == null) {
+				random = new int[randoms.size()];
+				final Iterator<Integer> ri = randoms.iterator();
+				for (int i = 0; i < random.length; i++) {
+					random[i] = ri.next();
+				}
+				generator = new BMSGenerator(data, ispms, random);
+			}
+			random = new int[srandoms.size()];
+			final Iterator<Integer> ri = srandoms.iterator();
 			for (int i = 0; i < random.length; i++) {
 				random[i] = ri.next();
 			}
-			generator = new BMSGenerator(data, ispms, random);
+			model.setRandom(random);
+			return model;
+		} catch (IOException e) {
+			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
+			Logger.getGlobal()
+					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+		} catch (Exception e) {
+			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
+			Logger.getGlobal()
+					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 		}
-		random = new int[srandoms.size()];
-		final Iterator<Integer> ri = srandoms.iterator();
-		for (int i = 0; i < random.length; i++) {
-			random[i] = ri.next();
-		}
-		model.setRandom(random);
-		return model;
+		return null;
 	}
 
 	private boolean matchesReserveWord(String line, String s) {
@@ -601,4 +616,22 @@ enum CommandWord {
 	};
 
 	public abstract DecodeLog execute(BMSModel model, String arg);
+}
+
+/**
+ * 予約語
+ *
+ * @author exch
+ */
+enum OptionWord {
+
+	URL {
+		public DecodeLog execute(BMSModel model, String arg) {
+			// TODO 未実装
+			return null;
+		}
+	};
+
+	public abstract DecodeLog execute(BMSModel model, String arg);
+
 }
