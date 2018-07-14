@@ -121,6 +121,9 @@ public class BMSONDecoder {
 		if (bmson.stop_events == null) {
 			bmson.stop_events = new StopEvent[0];
 		}
+		if (bmson.scroll_events == null) {
+			bmson.scroll_events = new ScrollEvent[0];
+		}
 
 		final double resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
 		final Comparator<BMSONObject> comparator = new Comparator<BMSONObject>() {
@@ -132,14 +135,20 @@ public class BMSONDecoder {
 
 		int bpmpos = 0;
 		int stoppos = 0;
+		int scrollpos = 0;
 		// bpmNotes, stopNotes処理
 		Arrays.sort(bmson.bpm_events, comparator);
 		Arrays.sort(bmson.stop_events, comparator);
+		Arrays.sort(bmson.scroll_events, comparator);
 
-		while (bpmpos < bmson.bpm_events.length || stoppos < bmson.stop_events.length) {
+		while (bpmpos < bmson.bpm_events.length || stoppos < bmson.stop_events.length || scrollpos < bmson.scroll_events.length) {
 			final int bpmy = bpmpos < bmson.bpm_events.length ? bmson.bpm_events[bpmpos].y : Integer.MAX_VALUE;
 			final int stopy = stoppos < bmson.stop_events.length ? bmson.stop_events[stoppos].y : Integer.MAX_VALUE;
-			if (bpmy <= stopy) {
+			final int scrolly = scrollpos < bmson.scroll_events.length ? bmson.scroll_events[scrollpos].y : Integer.MAX_VALUE;
+			if (scrolly <= stopy && scrolly <= bpmy) {
+				getTimeLine(scrolly, resolution).setScroll(bmson.scroll_events[scrollpos].rate);
+				scrollpos++;
+			} else if (bpmy <= stopy) {
 				getTimeLine(bpmy, resolution).setBPM(bmson.bpm_events[bpmpos].bpm);
 				bpmpos++;
 			} else if (stopy != Integer.MAX_VALUE) {
