@@ -10,7 +10,7 @@ import java.util.*;
 public class TimeLine {
 	
 	/**
-	 * タイムラインの時間(ms)
+	 * タイムラインの時間(us)
 	 */
 	private long time;
 	/**
@@ -39,9 +39,14 @@ public class TimeLine {
 	 */
 	private double bpm;
 	/**
-	 * ストップ時間(ms)
+	 * ストップ時間(us)
 	 */
 	private long stop;
+	/**
+	 * スクロールスピード
+	 */
+	private double scroll = 1.0;
+	
 	/**
 	 * 表示するBGAのID
 	 */
@@ -304,5 +309,13 @@ public class TimeLine {
 
 	public void setStop(long stop) {
 		this.stop = stop;
+	}
+	
+	public double getScroll() {
+		return scroll;
+	}
+
+	public void setScroll(double scroll) {
+		this.scroll = scroll;
 	}
 }

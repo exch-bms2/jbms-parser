@@ -32,6 +32,7 @@ public class Section {
 	public static final int P1_MINE_KEY_BASE = 131;
 	public static final int P2_MINE_KEY_BASE = 141;
 
+	public static final int SCROLL = 1000;
 	/**
 	 * 小節の拡大倍率
 	 */
@@ -98,7 +99,7 @@ public class Section {
 	private final List<DecodeLog> log;
 
 	public Section(BMSModel model, Section prev, List<String> lines, Map<Integer, Double> bpmtable,
-			Map<Integer, Double> stoptable, List<DecodeLog> log) {
+			Map<Integer, Double> stoptable, Map<Integer, Double> scrolltable, List<DecodeLog> log) {
 		this.model = model;
 		this.log = log;
 		final  List<int[]> auto = new ArrayList<int[]>();
@@ -113,23 +114,28 @@ public class Section {
 			int channel = 0;
 			try {
 				final char c1 = line.charAt(4);
-				if (c1 >= '0' && c1 <= '9') {
-					channel = (c1 - '0') * 10;
-				} else if (c1 >= 'a' && c1 <= 'z') {
-					channel = ((c1 - 'a') + 10) * 10;
-				} else if (c1 >= 'A' && c1 <= 'Z') {
-					channel = ((c1 - 'A') + 10) * 10;
-				} else {
-					throw new NumberFormatException();
-				}
-
 				final char c2 = line.charAt(5);
-				if (c2 >= '0' && c2 <= '9') {
-					channel += (c2 - '0');
+				
+				if((c1 == 'S' || c1 == 's') && (c2 == 'C' || c2 == 's')) {
+					// scroll
+					channel = SCROLL;
 				} else {
-					throw new NumberFormatException();
-				}
+					if (c1 >= '0' && c1 <= '9') {
+						channel = (c1 - '0') * 10;
+					} else if (c1 >= 'a' && c1 <= 'z') {
+						channel = ((c1 - 'a') + 10) * 10;
+					} else if (c1 >= 'A' && c1 <= 'Z') {
+						channel = ((c1 - 'A') + 10) * 10;
+					} else {
+						throw new NumberFormatException();
+					}
 
+					if (c2 >= '0' && c2 <= '9') {
+						channel += (c2 - '0');
+					} else {
+						throw new NumberFormatException();
+					}					
+				}
 			} catch (NumberFormatException e) {
 				log.add(new DecodeLog(WARNING, "チャンネル定義が無効です : " + line));
 			}
@@ -207,6 +213,20 @@ public class Section {
 							stop.put((double) j / stopdatas.length, st);
 						} else {
 							log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + stopdatas[j]));
+						}
+					}
+				}
+				break;
+				// scroll
+			case SCROLL:
+				int[] scrolldatas = this.splitData(line);
+				for (int j = 0; j < scrolldatas.length; j++) {
+					if (scrolldatas[j] != 0) {
+						Double st = scrolltable.get(scrolldatas[j]);
+						if (st != null) {
+							scroll.put((double) j / scrolldatas.length, st);
+						} else {
+							log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + scrolldatas[j]));
 						}
 					}
 				}
@@ -383,6 +403,7 @@ public class Section {
 
 	private final TreeMap<Double, Double> bpmchange = new TreeMap<Double, Double>();
 	private final TreeMap<Double, Double> stop = new TreeMap<Double, Double>();
+	private final TreeMap<Double, Double> scroll = new TreeMap<Double, Double>();
 	
 	private final int[] NOTEASSIGN_BEAT5 = { 0, 1, 2, 3, 4, -1, -1, 5, -1, 6, 7, 8, 9, 10, -1, -1, 11, -1 };
 	private final int[] NOTEASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, 12, 13, 14, 15, -1 };
@@ -418,11 +439,17 @@ public class Section {
 		Map.Entry<Double, Double> ste = stops.hasNext() ? stops.next() : null;
 		Iterator<Entry<Double, Double>> bpms = bpmchange.entrySet().iterator();			
 		Map.Entry<Double, Double> bce = bpms.hasNext() ? bpms.next() : null;
+		Iterator<Entry<Double, Double>> scrolls = scroll.entrySet().iterator();			
+		Map.Entry<Double, Double> sce = scrolls.hasNext() ? scrolls.next() : null;
 		
-		while(ste != null || bce != null) {
+		while(ste != null || bce != null || sce != null) {
 			final double bc = bce != null ? bce.getKey() : 2;
 			final double st = ste != null ? ste.getKey() : 2;
-			if(bc <= st) {
+			final double sc = sce != null ? sce.getKey() : 2;
+			if(sc <= st && sc <= bc) {
+				getTimeLine(sectionnum + sc * rate).setScroll(sce.getValue());
+				sce = scrolls.hasNext() ? scrolls.next() : null;
+			} else if(bc <= st) {
 				getTimeLine(sectionnum + bc * rate).setBPM(bce.getValue());
 				bce = bpms.hasNext() ? bpms.next() : null;
 			} else if(st <= 1){
@@ -431,7 +458,7 @@ public class Section {
 				ste = stops.hasNext() ? stops.next() : null;
 			}
 		}
-
+		
 		// 通常ノート配置
 		final int size = 74 + auto.length;
 		for (int keys = 0; keys < size; keys++) {
@@ -582,11 +609,13 @@ public class Section {
 		}
 		
 		Entry<Double, TimeLineCache> le = tlcache.lowerEntry(section);
+		double scroll = le.getValue().timeline.getScroll();
 		double bpm = le.getValue().timeline.getBPM();
 		double time = le.getValue().time + le.getValue().timeline.getMicroStop() + (240000.0 * 1000 * (section  - le.getKey())) / bpm;			
 		
 		TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
 		tl.setBPM(bpm);
+		tl.setScroll(scroll);
 		tlcache.put(section, new TimeLineCache(time, tl));
 		return tl;
 	}

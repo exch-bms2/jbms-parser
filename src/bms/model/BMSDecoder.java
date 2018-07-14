@@ -62,6 +62,7 @@ public class BMSDecoder {
 
 	private final List<String>[] lines = new List[1000];
 
+	private final Map<Integer, Double> scrolltable = new TreeMap<Integer, Double>();
 	private final Map<Integer, Double> stoptable = new TreeMap<Integer, Double>();
 	private final Map<Integer, Double> bpmtable = new TreeMap<Integer, Double>();
 	private final Deque<Integer> randoms = new ArrayDeque<Integer>();
@@ -89,6 +90,7 @@ public class BMSDecoder {
 		log.clear();
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
+		scrolltable.clear();
 		stoptable.clear();
 		bpmtable.clear();
 
@@ -252,6 +254,17 @@ public class BMSDecoder {
 						} else {
 							log.add(new DecodeLog(WARNING, "#STOPxxは不十分な定義です : " + line));
 						}
+					} else if (matchesReserveWord(line, "SCROLL")) {
+						if (line.length() >= 11) {
+							try {
+								double scroll = Double.parseDouble(line.substring(10).trim());
+								scrolltable.put(parseInt36(line, 7), scroll);
+							} catch (NumberFormatException e) {
+								log.add(new DecodeLog(WARNING, "#SCROLLxxに数字が定義されていません : " + line));
+							}
+						} else {
+							log.add(new DecodeLog(WARNING, "#SCROLLxxは不十分な定義です : " + line));
+						}
 					} else {
 						for (CommandWord cw : CommandWord.values()) {
 							if (line.length() > cw.name().length() + 2 && matchesReserveWord(line, cw.name())) {
@@ -275,7 +288,7 @@ public class BMSDecoder {
 			Section[] sections = new Section[maxsec + 1];
 			for (int i = 0; i <= maxsec; i++) {
 				sections[i] = new Section(model, prev, lines[i] != null ? lines[i] : Collections.EMPTY_LIST, bpmtable,
-						stoptable, log);
+						stoptable, scrolltable, log);
 				prev = sections[i];
 			}
 
