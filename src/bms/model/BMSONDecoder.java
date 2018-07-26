@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import static bms.model.DecodeLog.State.*;
 
 import bms.model.BMSDecoder.TimeLineCache;
+import bms.model.Layer.EventType;
 import bms.model.bmson.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -319,7 +320,8 @@ public class BMSONDecoder {
 			}
 			if (bmson.bga.poor_events != null) {
 				for (BNote n : bmson.bga.poor_events) {
-					getTimeLine(n.y, resolution).setPoor(new int[] { idmap.get(n.id) });
+					getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
+							new Layer.Sequence[] {new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)})});
 				}
 			}
 			model.setBgaList(bgamap);

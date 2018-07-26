@@ -58,7 +58,7 @@ public class TimeLine {
 	/**
 	 * POORレイヤー
 	 */
-	private int[] poor;
+	private Layer[] eventlayer = Layer.EMPTY;
 
 	public TimeLine(double section, long time, int notesize) {
 		this.section = section;
@@ -270,12 +270,12 @@ public class TimeLine {
 		this.layer = layer;
 	}
 
-	public int[] getPoor() {
-		return poor;
+	public Layer[] getEventlayer() {
+		return eventlayer;
 	}
 
-	public void setPoor(int[] poor) {
-		this.poor = poor;
+	public void setEventlayer(Layer[] eventlayer) {
+		this.eventlayer = eventlayer;
 	}
 
 	public double getSection() {

@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import bms.model.BMSDecoder.TimeLineCache;
+import bms.model.Layer.EventType;
 
 import static bms.model.DecodeLog.State.*;
 
@@ -424,16 +425,19 @@ public class Section {
 		// 小節線追加
 		final TimeLine basetl = getTimeLine(sectionnum);
 		basetl.setSectionLine(true);
-		final int[] poors = new int[poor.length];
-		for (int i = 0; i < poors.length; i++) {
+		
+		final Layer.Sequence[] poors = new Layer.Sequence[poor.length + 1];
+		final int poortime = 500;
+		
+		for (int i = 0; i < poor.length; i++) {
 			if (bgamap[poor[i]] != -2) {
-				poors[i] = bgamap[poor[i]];
+				poors[i] = new Layer.Sequence((long)(i * poortime / poor.length), bgamap[poor[i]]);
 			} else {
-				poors[i] = -1;
+				poors[i] = new Layer.Sequence((long)(i * poortime / poor.length), -1);
 			}
 		}
-		
-		basetl.setPoor(poors);
+		poors[poors.length - 1] = new Layer.Sequence(poortime);
+		basetl.setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),poors)});
 		// BPM変化。ストップシーケンステーブル準備
 		Iterator<Entry<Double, Double>> stops = stop.entrySet().iterator();			
 		Map.Entry<Double, Double> ste = stops.hasNext() ? stops.next() : null;
