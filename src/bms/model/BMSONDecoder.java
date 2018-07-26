@@ -303,10 +303,27 @@ public class BMSONDecoder {
 		if (bmson.bga != null && bmson.bga.bga_header != null) {
 			final String[] bgamap = new String[bmson.bga.bga_header.length];
 			final Map<Integer, Integer> idmap = new HashMap<Integer, Integer>(bmson.bga.bga_header.length);
+			final Map<Integer, Layer.Sequence[]> seqmap = new HashMap<Integer, Layer.Sequence[]>();
 			for (int i = 0; i < bmson.bga.bga_header.length; i++) {
 				BGAHeader bh = bmson.bga.bga_header[i];
 				bgamap[i] = bh.name;
 				idmap.put(bh.id, i);
+			}
+			if (bmson.bga.bga_sequence != null) {
+				for (BGASequence n : bmson.bga.bga_sequence) {
+					if(n != null) {
+						Layer.Sequence[] sequence = new Layer.Sequence[n.sequence.length];
+						for(int i =0;i < sequence.length;i++) {
+							Sequence seq = n.sequence[i];
+							if(seq.id != Integer.MIN_VALUE) {
+								sequence[i] = new Layer.Sequence(seq.time, seq.id);
+							} else {
+								sequence[i] = new Layer.Sequence(seq.time);								
+							}
+						}
+						seqmap.put(n.id, sequence);
+					}
+				}
 			}
 			if (bmson.bga.bga_events != null) {
 				for (BNote n : bmson.bga.bga_events) {
@@ -315,13 +332,33 @@ public class BMSONDecoder {
 			}
 			if (bmson.bga.layer_events != null) {
 				for (BNote n : bmson.bga.layer_events) {
-					getTimeLine(n.y, resolution).setLayer(idmap.get(n.id));
+					if(seqmap.containsKey(n.id) ) {
+						Layer.Event event = null;
+						switch(n.condition) {
+						case "play":
+							event = new Layer.Event(EventType.PLAY, n.interval);
+							break;
+						case "miss":
+							event = new Layer.Event(EventType.MISS, n.interval);
+							break;
+						default:								
+							event = new Layer.Event(EventType.ALWAYS, n.interval);
+						}
+						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(event, seqmap.get(n.id))});						
+					} else {
+						getTimeLine(n.y, resolution).setLayer(idmap.get(n.id));						
+					}
 				}
 			}
 			if (bmson.bga.poor_events != null) {
 				for (BNote n : bmson.bga.poor_events) {
-					getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
-							new Layer.Sequence[] {new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)})});
+					if(seqmap.containsKey(n.id) ) {
+						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
+								seqmap.get(n.id))});						
+					} else {
+						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
+								new Layer.Sequence[] {new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)})});
+					}
 				}
 			}
 			model.setBgaList(bgamap);
