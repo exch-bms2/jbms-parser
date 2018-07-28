@@ -6,9 +6,9 @@ public class Layer {
 
 	public final Event event;
 	
-	public final Sequence[] sequence;
+	public final Sequence[][] sequence;
 	
-	public Layer(Event event, Sequence[] sequence) {
+	public Layer(Event event, Sequence[][] sequence) {
 		this.event = event;
 		this.sequence = sequence;
 	}

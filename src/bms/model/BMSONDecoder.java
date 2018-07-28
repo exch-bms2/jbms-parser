@@ -332,32 +332,38 @@ public class BMSONDecoder {
 			}
 			if (bmson.bga.layer_events != null) {
 				for (BNote n : bmson.bga.layer_events) {
-					if(seqmap.containsKey(n.id) ) {
-						Layer.Event event = null;
-						switch(n.condition) {
-						case "play":
-							event = new Layer.Event(EventType.PLAY, n.interval);
-							break;
-						case "miss":
-							event = new Layer.Event(EventType.MISS, n.interval);
-							break;
-						default:								
-							event = new Layer.Event(EventType.ALWAYS, n.interval);
-						}
-						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(event, seqmap.get(n.id))});						
-					} else {
-						getTimeLine(n.y, resolution).setLayer(idmap.get(n.id));						
+					int[] idset = n.id_set != null ? n.id_set : new int[] {n.id};
+					Layer.Sequence[][] seqs = new Layer.Sequence[idset.length][];
+					Layer.Event event = null;
+					switch(n.condition) {
+					case "play":
+						event = new Layer.Event(EventType.PLAY, n.interval);
+						break;
+					case "miss":
+						event = new Layer.Event(EventType.MISS, n.interval);
+						break;
+					default:								
+						event = new Layer.Event(EventType.ALWAYS, n.interval);
 					}
+					for(int seqindex = 0; seqindex < seqs.length;seqindex++) {
+						int nid = idset[seqindex];
+						if(seqmap.containsKey(nid) ) {
+							seqs[seqindex] = seqmap.get(nid);
+						} else {
+							seqs[seqindex] = new Layer.Sequence[] {new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)};
+						}						
+					}
+					getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(event, seqs)});						
 				}
 			}
 			if (bmson.bga.poor_events != null) {
 				for (BNote n : bmson.bga.poor_events) {
 					if(seqmap.containsKey(n.id) ) {
 						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
-								seqmap.get(n.id))});						
+								new Layer.Sequence[][] {seqmap.get(n.id)})});						
 					} else {
 						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
-								new Layer.Sequence[] {new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)})});
+								new Layer.Sequence[][] {{new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)}})});
 					}
 				}
 			}

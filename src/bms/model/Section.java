@@ -437,7 +437,7 @@ public class Section {
 			}
 		}
 		poors[poors.length - 1] = new Layer.Sequence(poortime);
-		basetl.setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),poors)});
+		basetl.setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),new Layer.Sequence[][] {poors})});
 		// BPM変化。ストップシーケンステーブル準備
 		Iterator<Entry<Double, Double>> stops = stop.entrySet().iterator();			
 		Map.Entry<Double, Double> ste = stops.hasNext() ? stops.next() : null;
