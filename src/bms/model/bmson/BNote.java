@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 public class BNote extends BMSONObject {
 	public int id; // as it is.
+	public int[] id_set; // as it is.
 	public String condition;
 	public int interval;
 }
