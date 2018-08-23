@@ -426,18 +426,20 @@ public class Section {
 		final TimeLine basetl = getTimeLine(sectionnum);
 		basetl.setSectionLine(true);
 		
-		final Layer.Sequence[] poors = new Layer.Sequence[poor.length + 1];
-		final int poortime = 500;
-		
-		for (int i = 0; i < poor.length; i++) {
-			if (bgamap[poor[i]] != -2) {
-				poors[i] = new Layer.Sequence((long)(i * poortime / poor.length), bgamap[poor[i]]);
-			} else {
-				poors[i] = new Layer.Sequence((long)(i * poortime / poor.length), -1);
+		if(poor.length > 0) {
+			final Layer.Sequence[] poors = new Layer.Sequence[poor.length + 1];
+			final int poortime = 500;
+			
+			for (int i = 0; i < poor.length; i++) {
+				if (bgamap[poor[i]] != -2) {
+					poors[i] = new Layer.Sequence((long)(i * poortime / poor.length), bgamap[poor[i]]);
+				} else {
+					poors[i] = new Layer.Sequence((long)(i * poortime / poor.length), -1);
+				}
 			}
+			poors[poors.length - 1] = new Layer.Sequence(poortime);
+			basetl.setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),new Layer.Sequence[][] {poors})});			
 		}
-		poors[poors.length - 1] = new Layer.Sequence(poortime);
-		basetl.setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),new Layer.Sequence[][] {poors})});
 		// BPM変化。ストップシーケンステーブル準備
 		Iterator<Entry<Double, Double>> stops = stop.entrySet().iterator();			
 		Map.Entry<Double, Double> ste = stops.hasNext() ? stops.next() : null;

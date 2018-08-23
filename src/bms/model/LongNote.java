@@ -26,9 +26,10 @@ public class LongNote extends Note {
 		this.setWav(wav);
 	}
 	
-	public LongNote(int wav,long starttime) {
-		this.setStarttime(starttime);
+	public LongNote(int wav,long starttime, long duration) {
 		this.setWav(wav);
+		this.setStarttime(starttime);
+		this.setDuration(duration);
 	}
 	
 	public int getType() {
