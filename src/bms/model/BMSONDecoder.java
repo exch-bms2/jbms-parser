@@ -335,7 +335,7 @@ public class BMSONDecoder {
 					int[] idset = n.id_set != null ? n.id_set : new int[] {n.id};
 					Layer.Sequence[][] seqs = new Layer.Sequence[idset.length][];
 					Layer.Event event = null;
-					switch(n.condition) {
+					switch(n.condition != null ? n.condition : "") {
 					case "play":
 						event = new Layer.Event(EventType.PLAY, n.interval);
 						break;
