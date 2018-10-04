@@ -107,13 +107,6 @@ public class BMSModel implements Comparable {
 
 	private int[] random;
 
-	public static final int TOTALNOTES_ALL = 0;
-	public static final int TOTALNOTES_KEY = 1;
-	public static final int TOTALNOTES_LONG_KEY = 2;
-	public static final int TOTALNOTES_SCRATCH = 3;
-	public static final int TOTALNOTES_LONG_SCRATCH = 4;
-	public static final int TOTALNOTES_MINE = 5;
-
 	public BMSModel() {
 	}
 
@@ -256,160 +249,6 @@ public class BMSModel implements Comparable {
 		return bpm;
 	}
 
-	/**
-	 * 総ノート数を返す。
-	 * 
-	 * @return 総ノート数
-	 */
-	public int getTotalNotes() {
-		return this.getTotalNotes(0, Integer.MAX_VALUE);
-	}
-
-	public int getTotalNotes(int type) {
-		return this.getTotalNotes(0, Integer.MAX_VALUE, type);
-	}
-
-	/**
-	 * 指定の時間範囲の総ノート数を返す
-	 * 
-	 * @param start
-	 *            開始時間(ms)
-	 * @param end
-	 *            終了時間(ms)
-	 * @return 指定の時間範囲の総ノート数
-	 */
-	public int getTotalNotes(int start, int end) {
-		return this.getTotalNotes(start, end, TOTALNOTES_ALL);
-	}
-
-	/**
-	 * 指定の時間範囲、指定の種類のノートの総数を返す
-	 * 
-	 * @param start
-	 *            開始時間(ms)
-	 * @param end
-	 *            終了時間(ms)
-	 * @param type
-	 *            ノートの種類
-	 * @return 指定の時間範囲、指定の種類のの総ノート数
-	 */
-	public int getTotalNotes(int start, int end, int type) {
-		return this.getTotalNotes(start, end, type, 0);
-	}
-
-	/**
-	 * 指定の時間範囲、指定の種類、指定のプレイサイドのノートの総数を返す
-	 * 
-	 * @param start
-	 *            開始時間(ms)
-	 * @param end
-	 *            終了時間(ms)
-	 * @param type
-	 *            ノートの種類
-	 * @param side
-	 *            プレイサイド(0:両方, 1:1P側, 2:2P側)
-	 * @return 指定の時間範囲、指定の種類のの総ノート数
-	 */
-	public int getTotalNotes(int start, int end, int type, int side) {
-		if(mode.player == 1 && side == 2) {
-			return 0;
-		}
-		int[] slane = new int[mode.scratchKey.length / (side == 0 ? 1 : mode.player)];
-		for(int i = (side == 2 ? slane.length: 0), index = 0;index < slane.length;i++) {
-			slane[index] = mode.scratchKey[i];
-			index++;
-		}		
-		int[] nlane = new int[(mode.key - mode.scratchKey.length) / (side == 0 ? 1 : mode.player)];
-		for(int i = 0, index = 0;index < nlane.length;i++) {
-			if(!mode.isScratchKey(i)) {
-				nlane[index] = i;
-				index++;				
-			}
-		}
-
-		int count = 0;
-		for (TimeLine tl : timelines) {
-			if (tl.getTime() >= start && tl.getTime() < end) {
-				switch (type) {
-				case TOTALNOTES_ALL:
-					count += tl.getTotalNotes(lntype);
-					break;
-				case TOTALNOTES_KEY:
-					for (int lane : nlane) {
-						if (tl.existNote(lane) && (tl.getNote(lane) instanceof NormalNote)) {
-							count++;
-						}
-					}
-					break;
-				case TOTALNOTES_LONG_KEY:
-					for (int lane : nlane) {
-						if (tl.existNote(lane) && (tl.getNote(lane) instanceof LongNote)) {
-							LongNote ln = (LongNote) tl.getNote(lane);
-							if (ln.getType() == LongNote.TYPE_CHARGENOTE
-									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
-									|| !ln.isEnd()) {
-								count++;
-							}
-						}
-					}
-					break;
-				case TOTALNOTES_SCRATCH:
-					for (int lane : slane) {
-						if (tl.existNote(lane) && (tl.getNote(lane) instanceof NormalNote)) {
-							count++;
-						}
-					}
-					break;
-				case TOTALNOTES_LONG_SCRATCH:
-					for (int lane : slane) {
-						final Note n = tl.getNote(lane);
-						if (n instanceof LongNote) {
-							final LongNote ln = (LongNote) n;
-							if (ln.getType() == LongNote.TYPE_CHARGENOTE
-									|| ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-									|| (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNTYPE_LONGNOTE)
-									|| !ln.isEnd()) {
-								count++;
-							}
-						}
-					}
-					break;
-				case TOTALNOTES_MINE:
-					for (int lane : nlane) {
-						if (tl.existNote(lane) && (tl.getNote(lane) instanceof MineNote)) {
-							count++;
-						}
-					}
-					for (int lane : slane) {
-						if (tl.existNote(lane) && (tl.getNote(lane) instanceof MineNote)) {
-							count++;
-						}
-					}
-					break;
-				}
-			}
-		}
-		return count;
-	}
-
-	public double getAverageNotesPerTime(int start, int end) {
-		return (double) this.getTotalNotes(start, end) * 1000 / (end - start);
-	}
-
-	public double getMaxNotesPerTime(int range) {
-		int maxnotes = 0;
-		TimeLine[] tl = getAllTimeLines();
-		for (int i = 0; i < tl.length; i++) {
-			int notes = 0;
-			for (int j = i; j < tl.length && tl[j].getTime() < tl[i].getTime() + range; j++) {
-				notes += tl[j].getTotalNotes(lntype);
-			}
-			maxnotes = (maxnotes < notes) ? notes : maxnotes;
-		}
-		return maxnotes;
-	}
-	
 	public void setAllTimeLine(TimeLine[] timelines) {
 		this.timelines = timelines;
 	}
@@ -601,15 +440,6 @@ public class BMSModel implements Comparable {
 			}
 		}
 		return false;
-	}
-
-	public void setFrequency(float freq) {
-		bpm = bpm * freq;
-		for (TimeLine tl : timelines) {
-			tl.setBPM(tl.getBPM() * freq);
-			tl.setStop((long) (tl.getMicroStop() / freq));
-			tl.setTime((long) (tl.getMicroTime() / freq));
-		}
 	}
 
 	public String getPreview() {
