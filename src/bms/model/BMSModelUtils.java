@@ -14,12 +14,12 @@ public class BMSModelUtils {
 	 * 
 	 * @return 総ノート数
 	 */
-	public int getTotalNotes(BMSModel model) {
-		return this.getTotalNotes(model, 0, Integer.MAX_VALUE);
+	public static int getTotalNotes(BMSModel model) {
+		return getTotalNotes(model, 0, Integer.MAX_VALUE);
 	}
 
-	public int getTotalNotes(BMSModel model, int type) {
-		return this.getTotalNotes(model, 0, Integer.MAX_VALUE, type);
+	public static int getTotalNotes(BMSModel model, int type) {
+		return getTotalNotes(model, 0, Integer.MAX_VALUE, type);
 	}
 
 	/**
@@ -31,8 +31,8 @@ public class BMSModelUtils {
 	 *            終了時間(ms)
 	 * @return 指定の時間範囲の総ノート数
 	 */
-	public int getTotalNotes(BMSModel model, int start, int end) {
-		return this.getTotalNotes(model, start, end, TOTALNOTES_ALL);
+	public static int getTotalNotes(BMSModel model, int start, int end) {
+		return getTotalNotes(model, start, end, TOTALNOTES_ALL);
 	}
 
 	/**
@@ -46,8 +46,8 @@ public class BMSModelUtils {
 	 *            ノートの種類
 	 * @return 指定の時間範囲、指定の種類のの総ノート数
 	 */
-	public int getTotalNotes(BMSModel model, int start, int end, int type) {
-		return this.getTotalNotes(model, start, end, type, 0);
+	public static int getTotalNotes(BMSModel model, int start, int end, int type) {
+		return getTotalNotes(model, start, end, type, 0);
 	}
 
 	/**
@@ -63,7 +63,7 @@ public class BMSModelUtils {
 	 *            プレイサイド(0:両方, 1:1P側, 2:2P側)
 	 * @return 指定の時間範囲、指定の種類のの総ノート数
 	 */
-	public int getTotalNotes(BMSModel model, int start, int end, int type, int side) {
+	public static int getTotalNotes(BMSModel model, int start, int end, int type, int side) {
 		Mode mode = model.getMode();
 		if(mode.player == 1 && side == 2) {
 			return 0;

@@ -404,6 +404,10 @@ public class BMSModel implements Comparable {
 	public void setPath(String path) {
 		this.path = path;
 	}
+	
+	public int getTotalNotes() {
+		return BMSModelUtils.getTotalNotes(this);
+	}
 
 	public boolean containsUndefinedLongNote() {
 		final int keys = mode.key;
