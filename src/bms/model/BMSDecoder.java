@@ -293,16 +293,16 @@ public class BMSDecoder {
 			}
 
 			final TreeMap<Double, TimeLineCache> timelines = new TreeMap<Double, TimeLineCache>();
-
+			final List<LongNote>[] lnlist = new List[model.getMode().key];
+			LongNote[] lnendstatus = new LongNote[model.getMode().key];
 			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 			basetl.setBPM(model.getBpm());
 			timelines.put(0.0, new TimeLineCache(0.0, basetl));
 			for (Section section : sections) {
-				section.makeTimeLines(wm, bm, timelines);
+				section.makeTimeLines(wm, bm, timelines, lnlist, lnendstatus);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
-			final int[] lastlnstatus = prev.getEndLNStatus(prev);
 			TimeLine[] tl = new TimeLine[timelines.size()];
 			int tlcount = 0;
 			for(TimeLineCache tlc : timelines.values()) {
@@ -317,15 +317,11 @@ public class BMSDecoder {
 				return null;
 			}
 
-			for (int i = 0; i < 18; i++) {
-				if (lastlnstatus[i] != 0) {
+			for (int i = 0; i < lnendstatus.length; i++) {
+				if (lnendstatus[i] != null) {
 					log.add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
-					for (int index = tl.length - 1; index >= 0; index--) {
-						final Note n = tl[index].getNote(i);
-						if (n != null && n instanceof LongNote && ((LongNote) n).getPair() == null) {
-							tl[index].setNote(i, null);
-							break;
-						}
+					if(lnendstatus[i].getSection() != Double.MIN_VALUE) {
+						timelines.get(lnendstatus[i].getSection()).timeline.setNote(i,  null);
 					}
 				}
 			}
@@ -373,6 +369,7 @@ public class BMSDecoder {
 			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
 			Logger.getGlobal()
 					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+			e.printStackTrace();
 		}
 		return null;
 	}
