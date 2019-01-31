@@ -151,12 +151,11 @@ public class Section {
 				break;
 			// BPM変化
 			case BPM_CHANGE:
-				int[] datas = this.splitData(line);
-				for (int j = 0; j < datas.length; j++) {
-					if (datas[j] != 0) {
-						bpmchange.put((double) j / datas.length, (double) (datas[j] / 36) * 16 + (datas[j] % 36));
-					}
-				}
+				this.splitData(line, (pos, data) -> {
+					if (data != 0) {
+						bpmchange.put(pos, (double) (data / 36) * 16 + (data % 36));
+					}					
+				});
 				break;
 			// BGAレーン
 			case BGA_PLAY:
@@ -187,45 +186,42 @@ public class Section {
 				break;
 			// BPM変化(拡張)
 			case BPM_CHANGE_EXTEND:
-				int[] bpmdatas = this.splitData(line);
-				for (int j = 0; j < bpmdatas.length; j++) {
-					if (bpmdatas[j] != 0) {
-						Double bpm = bpmtable.get(bpmdatas[j]);
+				this.splitData(line, (pos, data) -> {
+					if (data != 0) {
+						Double bpm = bpmtable.get(data);
 						if (bpm != null) {
-							bpmchange.put((double) j / bpmdatas.length, bpm);
+							bpmchange.put(pos, bpm);
 						} else {
-							log.add(new DecodeLog(WARNING, "未定義のBPM変化を参照しています : " + bpmdatas[j]));
+							log.add(new DecodeLog(WARNING, "未定義のBPM変化を参照しています : " + data));
 						}
-					}
-				}
+					}					
+				});
 				break;
 			// ストップシーケンス
 			case STOP:
-				int[] stopdatas = this.splitData(line);
-				for (int j = 0; j < stopdatas.length; j++) {
-					if (stopdatas[j] != 0) {
-						Double st = stoptable.get(stopdatas[j]);
+				this.splitData(line, (pos, data) -> {
+					if (data != 0) {
+						Double st = stoptable.get(data);
 						if (st != null) {
-							stop.put((double) j / stopdatas.length, st);
+							stop.put(pos, st);
 						} else {
-							log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + stopdatas[j]));
+							log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + data));
 						}
-					}
-				}
+					}					
+				});
 				break;
 				// scroll
 			case SCROLL:
-				int[] scrolldatas = this.splitData(line);
-				for (int j = 0; j < scrolldatas.length; j++) {
-					if (scrolldatas[j] != 0) {
-						Double st = scrolltable.get(scrolldatas[j]);
+				this.splitData(line, (pos, data) -> {
+					if (data != 0) {
+						Double st = scrolltable.get(data);
 						if (st != null) {
-							scroll.put((double) j / scrolldatas.length, st);
+							scroll.put(pos, st);
 						} else {
-							log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + scrolldatas[j]));
+							log.add(new DecodeLog(WARNING, "未定義のSCROLLを参照しています : " + data));
 						}
-					}
-				}
+					}					
+				});
 				break;
 			}
 			// 通常ノート(1P側)
@@ -319,14 +315,32 @@ public class Section {
 		final int lindex = line.length();
 		final int split = (lindex - findex) / 2;
 		int[] result = new int[split];
-		try {
-			for (int i = 0; i < split; i++) {
-				result[i] = BMSDecoder.parseInt36(line, findex + i * 2);
+		for (int i = 0; i < split; i++) {
+			result[i] = BMSDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			if(result[i] == -1) {
+				log.add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
+				result[i] = 0;
 			}
-		} catch(NumberFormatException e) {
-			log.add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
 		}
 		return result;			
+	}
+
+	private void splitData(String line, DataProcessor processor) {
+		final int findex = line.indexOf(":") + 1;
+		final int lindex = line.length();
+		final int split = (lindex - findex) / 2;
+		for (int i = 0; i < split; i++) {
+			int result = BMSDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			if(result != -1) {
+				processor.process((double)i / split, result);
+			} else {
+				log.add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));				
+			}
+		}
+	}
+	
+	interface DataProcessor {
+		public void process(double pos, int data);
 	}
 
 	private final TreeMap<Double, Double> bpmchange = new TreeMap<Double, Double>();
