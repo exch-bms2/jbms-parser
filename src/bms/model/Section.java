@@ -25,16 +25,16 @@ public class Section {
 	public static final int BPM_CHANGE_EXTEND = 8;
 	public static final int STOP = 9;
 
-	public static final int P1_KEY_BASE = 11;
-	public static final int P2_KEY_BASE = 21;
-	public static final int P1_INVISIBLE_KEY_BASE = 31;
-	public static final int P2_INVISIBLE_KEY_BASE = 41;
-	public static final int P1_LONG_KEY_BASE = 51;
-	public static final int P2_LONG_KEY_BASE = 61;
-	public static final int P1_MINE_KEY_BASE = 131;
-	public static final int P2_MINE_KEY_BASE = 141;
+	public static final int P1_KEY_BASE = 1 * 36 + 1;
+	public static final int P2_KEY_BASE = 2 * 36 + 1;
+	public static final int P1_INVISIBLE_KEY_BASE = 3 * 36 + 1;
+	public static final int P2_INVISIBLE_KEY_BASE = 4 * 36 + 1;
+	public static final int P1_LONG_KEY_BASE = 5 * 36 + 1;
+	public static final int P2_LONG_KEY_BASE = 6 * 36 + 1;
+	public static final int P1_MINE_KEY_BASE = 13 * 36 + 1;
+	public static final int P2_MINE_KEY_BASE = 14 * 36 + 1;
 
-	public static final int SCROLL = 1000;
+	public static final int SCROLL = 1020;
 	/**
 	 * 小節の拡大倍率
 	 */
@@ -67,7 +67,7 @@ public class Section {
 			sectionnum = 0;
 		}
 		for (String line : lines) {
-			int channel = getChannel(line);
+			int channel = BMSDecoder.parseInt36(line.charAt(4), line.charAt(5));
 			switch (channel) {
 			case ILLEGAL:
 				log.add(new DecodeLog(WARNING, "チャンネル定義が無効です : " + line));
@@ -204,34 +204,6 @@ public class Section {
 		return result;			
 	}
 	
-	private int getChannel(String line) {
-		final char c1 = line.charAt(4);
-		final char c2 = line.charAt(5);
-		
-		if((c1 == 'S' || c1 == 's') && (c2 == 'C' || c2 == 's')) {
-			// scroll
-			return SCROLL;
-		} else {
-			int channel = 0;
-			if (c1 >= '0' && c1 <= '9') {
-				channel = (c1 - '0') * 10;
-			} else if (c1 >= 'a' && c1 <= 'z') {
-				channel = ((c1 - 'a') + 10) * 10;
-			} else if (c1 >= 'A' && c1 <= 'Z') {
-				channel = ((c1 - 'A') + 10) * 10;
-			} else {
-				return ILLEGAL;
-			}
-
-			if (c2 >= '0' && c2 <= '9') {
-				channel += (c2 - '0');
-			} else {
-				return ILLEGAL;
-			}					
-			return channel;
-		}
-	}
-
 	private void processData(String line, DataProcessor processor) {
 		final int findex = line.indexOf(":") + 1;
 		final int lindex = line.length();
@@ -313,7 +285,7 @@ public class Section {
 		}
 		
 		for(String line : channellines) {
-			int channel = getChannel(line);
+			int channel = BMSDecoder.parseInt36(line.charAt(4), line.charAt(5));
 			int tmpkey = 0;
 			if(channel >= P1_KEY_BASE && channel < P1_KEY_BASE + 9) {
 				tmpkey = cassign[channel - P1_KEY_BASE];
