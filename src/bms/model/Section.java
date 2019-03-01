@@ -67,7 +67,7 @@ public class Section {
 			sectionnum = 0;
 		}
 		for (String line : lines) {
-			int channel = BMSDecoder.parseInt36(line.charAt(4), line.charAt(5));
+			int channel = ChartDecoder.parseInt36(line.charAt(4), line.charAt(5));
 			switch (channel) {
 			case ILLEGAL:
 				log.add(new DecodeLog(WARNING, "チャンネル定義が無効です : " + line));
@@ -195,7 +195,7 @@ public class Section {
 		final int split = (lindex - findex) / 2;
 		int[] result = new int[split];
 		for (int i = 0; i < split; i++) {
-			result[i] = BMSDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			result[i] = ChartDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
 			if(result[i] == -1) {
 				log.add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
 				result[i] = 0;
@@ -209,7 +209,7 @@ public class Section {
 		final int lindex = line.length();
 		final int split = (lindex - findex) / 2;
 		for (int i = 0; i < split; i++) {
-			int result = BMSDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			int result = ChartDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
 			if(result > 0) {
 				processor.process((double)i / split, result);
 			} else if(result == -1){
@@ -285,7 +285,7 @@ public class Section {
 		}
 		
 		for(String line : channellines) {
-			int channel = BMSDecoder.parseInt36(line.charAt(4), line.charAt(5));
+			int channel = ChartDecoder.parseInt36(line.charAt(4), line.charAt(5));
 			int tmpkey = 0;
 			if(channel >= P1_KEY_BASE && channel < P1_KEY_BASE + 9) {
 				tmpkey = cassign[channel - P1_KEY_BASE];

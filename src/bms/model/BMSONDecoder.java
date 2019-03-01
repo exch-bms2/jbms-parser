@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * 
  * @author exch
  */
-public class BMSONDecoder {
+public class BMSONDecoder implements ChartDecoder {
 
 	private final ObjectMapper mapper = new ObjectMapper();
 
@@ -381,6 +381,10 @@ public class BMSONDecoder {
 				+ (System.currentTimeMillis() - currnttime));
 		model.setPath(f.toAbsolutePath().toString());
 		return model;
+	}
+	
+	public DecodeLog[] getDecodeLog() {
+		return log.toArray(new DecodeLog[log.size()]);
 	}
 
 	private TimeLine getTimeLine(int y, double resolution) {
