@@ -173,25 +173,23 @@ public class BMSModelUtils {
 		return maxnotes;
 	}
 	
-	public static void setStartNoteSection(BMSModel model, double startsection) {
-		boolean existNote = false;
+	public static long setStartNoteTime(BMSModel model, long starttime) {
+		long marginTime = 0;
 		for (TimeLine tl : model.getAllTimeLines()) {
-			if(tl.getSection() >= startsection) {
+			if(tl.getTime() >= starttime) {
 				break;
 			}
 			if(tl.existNote()) {
-				existNote = true;
+				marginTime = starttime - tl.getTime();
 				break;
 			}
 		}
 		
-		if(existNote) {
-			double marginSection = 1.0;
-			for(;marginSection < startsection; marginSection += 1.0);
-			long marginTime = (long) (marginSection * 240000000 / model.getBpm());
+		if(marginTime > 0) {
+			double marginSection = marginTime * model.getAllTimeLines()[0].getBPM() / 240000;
 			for (TimeLine tl : model.getAllTimeLines()) {
 				tl.setSection(tl.getSection() + marginSection);
-				tl.setTime(tl.getMicroTime() + marginTime);
+				tl.setTime(tl.getMicroTime() + marginTime * 1000);
 			}
 			
 			TimeLine[] tl2 = new TimeLine[model.getAllTimeLines().length + 1];
@@ -202,5 +200,7 @@ public class BMSModelUtils {
 			}
 			model.setAllTimeLine(tl2);
 		}
+		
+		return marginTime;
 	}
 }
