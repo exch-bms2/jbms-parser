@@ -175,13 +175,13 @@ public class Section {
 			channel -= ch;			
 			if((mode == Mode.BEAT_5K || mode == Mode.BEAT_10K) && (channel == 7 || channel == 8)) {
 				this.processData(line, (pos, data) -> {
-					mode = (mode == Mode.BEAT_10K) ? Mode.BEAT_14K : Mode.BEAT_7K;
+					mode = (mode == Mode.BEAT_10K) ? Mode.BEAT_14K : ((mode == Mode.BEAT_5K) ? Mode.BEAT_7K : mode);
 				});
 			}
 			
 			if((mode == Mode.BEAT_5K || mode == Mode.BEAT_7K) && (ch == P2_KEY_BASE || ch == P2_INVISIBLE_KEY_BASE || ch == P2_LONG_KEY_BASE || ch ==P2_MINE_KEY_BASE)) {
 				this.processData(line, (pos, data) -> {
-					mode = (mode == Mode.BEAT_7K) ? Mode.BEAT_14K : Mode.BEAT_10K;
+					mode = (mode == Mode.BEAT_7K) ? Mode.BEAT_14K : ((mode == Mode.BEAT_5K) ? Mode.BEAT_10K : mode);
 				});
 			}
 			
