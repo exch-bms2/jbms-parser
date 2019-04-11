@@ -376,7 +376,7 @@ public class Section {
 				this.processData(line, (pos, data) -> {
 					// long note
 					final TimeLine tl = getTimeLine(sectionnum + rate * pos);
-					boolean insideln = tl.existNote(key);
+					boolean insideln = false;
 					if (!insideln && lnlist[key] != null) {
 						final double section = tl.getSection();
 						for (LongNote ln : lnlist[key]) {
@@ -390,6 +390,14 @@ public class Section {
 					if(!insideln) {
 						// LN処理
 						if (startln[key] == null) {
+							if(tl.existNote(key)) {
+								Note note = tl.getNote(key);
+								log.add(new DecodeLog(WARNING, "LN開始位置に通常ノートが存在します。レーン: "
+										+ (key + 1) + " - Time(ms):" + tl.getTime()));
+								if(note instanceof NormalNote && note.getWav() != wavmap[data]) {
+									tl.addBackGroundNote(note);
+								}								
+							}
 							LongNote ln = new LongNote(wavmap[data]);
 							tl.setNote(key, ln);
 							startln[key] = ln;
