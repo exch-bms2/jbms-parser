@@ -152,10 +152,14 @@ public class BMSDecoder implements ChartDecoder {
 					}
 				} else if (matchesReserveWord(line, "IF")) {
 					// RANDOM分岐開始
-					try {
-						skip.add((crandom.getLast() != Integer.parseInt(line.substring(4).trim())));
-					} catch (NumberFormatException e) {
-						log.add(new DecodeLog(WARNING, "#IFに数字が定義されていません"));
+					if(!crandom.isEmpty()) {
+						try {
+							skip.add((crandom.getLast() != Integer.parseInt(line.substring(4).trim())));
+						} catch (NumberFormatException e) {
+							log.add(new DecodeLog(WARNING, "#IFに数字が定義されていません"));
+						}						
+					} else {
+						log.add(new DecodeLog(WARNING, "#IFに対応する#RANDOMが定義されていません"));						
 					}
 				} else if (matchesReserveWord(line, "ENDIF")) {
 					if (!skip.isEmpty()) {
