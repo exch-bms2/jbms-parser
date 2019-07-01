@@ -351,9 +351,17 @@ public class Section {
 									break;
 								} else if (note instanceof LongNote && ((LongNote) note).getPair() == null) {
 									log.add(new DecodeLog(WARNING,
-											"LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + key + " - Time(ms):"
-													+ tl2.getTime()));
-									tl.setNote(key, note);
+											"LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
+													+ tl2.getSection()  + " - " + tl.getSection()));
+									LongNote lnend = new LongNote(-2);
+									tl.setNote(key, lnend);
+									((LongNote) note).setPair(lnend);
+									
+									if (lnlist[key] == null) {
+										lnlist[key] = new ArrayList<LongNote>();
+									}
+									lnlist[key].add((LongNote) note);
+									startln[key] = null;
 									break;
 								} else {
 									log.add(new DecodeLog(WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
