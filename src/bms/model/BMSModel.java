@@ -1,5 +1,8 @@
 package bms.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * BMSモデル
  * 
@@ -106,6 +109,8 @@ public class BMSModel implements Comparable {
 	private TimeLine[] timelines = new TimeLine[0];
 
 	private int[] random;
+
+	private Map<String, String> values = new HashMap<>();
 
 	public BMSModel() {
 	}
@@ -481,7 +486,11 @@ public class BMSModel implements Comparable {
 	public void setLnmode(int lnmode) {
 		this.lnmode = lnmode;
 	}
-	
+
+	public Map<String, String> getValues() {
+		return values;
+	}
+
 	public String toChartString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("JUDGERANK:" + judgerank + "\n");
