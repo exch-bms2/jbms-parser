@@ -58,7 +58,14 @@ public class BMSDecoder implements ChartDecoder {
 	}
 	
 	public BMSModel decode(ChartInformation info) {
-		return decode(info.path, info.data, info.path.toString().toLowerCase().endsWith(".pms"), info.selectedRandoms);
+		try {
+			this.lntype = info.lntype;
+			return decode(info.path, Files.readAllBytes(info.path), info.path.toString().toLowerCase().endsWith(".pms"), info.selectedRandoms);
+		} catch (IOException e) {
+			log.add(new DecodeLog(ERROR, "BMSファイルが見つかりません"));
+			Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
+		}
+		return null;
 	}
 
 
@@ -344,7 +351,6 @@ public class BMSDecoder implements ChartDecoder {
 				}
 			}
 
-			model.setLntype(lntype);
 			if (model.getTotal() <= 60.0) {
 				log.add(new DecodeLog(WARNING, "TOTALが未定義か、値が少なすぎます"));
 			}
@@ -371,13 +377,8 @@ public class BMSDecoder implements ChartDecoder {
 					selectedRandom[i] = ri.next();
 				}
 			}
-			int[] allRandoms = new int[randoms.size()];
-			final Iterator<Integer> ri = randoms.iterator();
-			for (int i = 0; i < allRandoms.length; i++) {
-				allRandoms[i] = ri.next();
-			}
 			
-			model.setChartInformation(new ChartInformation(data, path, allRandoms, selectedRandom));
+			model.setChartInformation(new ChartInformation(path, lntype, selectedRandom));
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));

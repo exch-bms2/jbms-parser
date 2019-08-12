@@ -43,6 +43,7 @@ public class BMSONDecoder implements ChartDecoder {
 	}
 
 	public BMSModel decode(ChartInformation info) {
+		this.lntype = info.lntype;
 		return decode(info.path);
 	}
 
@@ -110,7 +111,6 @@ public class BMSONDecoder implements ChartDecoder {
 		}
 		List<LongNote>[] lnlist = new List[model.getMode().key];
 		Map<bms.model.bmson.Note, LongNote> lnup = new HashMap();
-		model.setLntype(lntype);
 
 		model.setBanner(bmson.info.banner_image);
 		model.setBackbmp(bmson.info.back_image);
@@ -384,7 +384,7 @@ public class BMSONDecoder implements ChartDecoder {
 		Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 				+ (System.currentTimeMillis() - currnttime));
 		
-		model.setChartInformation(new ChartInformation(null, f, null, null));
+		model.setChartInformation(new ChartInformation(f, lntype, null));
 		return model;
 	}
 	

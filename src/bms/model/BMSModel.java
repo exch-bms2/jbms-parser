@@ -90,7 +90,6 @@ public class BMSModel implements Comparable {
 	 */
 	private String[] bgamap = new String[0];
 
-	private int lntype;
 	private int lnmode = LongNote.TYPE_UNDEFINED;
 
 	private int lnobj = -1;
@@ -366,6 +365,18 @@ public class BMSModel implements Comparable {
 		this.info = info;
 	}
 	
+	public int[] getRandom() {
+		return info != null ? info.selectedRandoms : null;
+	}
+	
+	public String getPath() {
+		return info != null && info.path != null ? info.path.toString() : null;
+	}
+	
+	public int getLntype() {
+		return info != null ? info.lntype : LNTYPE_LONGNOTE;
+	}
+
 	public String getStagefile() {
 		return stagefile;
 	}
@@ -388,14 +399,6 @@ public class BMSModel implements Comparable {
 			return;
 		}
 		this.backbmp = backbmp;
-	}
-
-	public int getLntype() {
-		return lntype;
-	}
-
-	public void setLntype(int lntype) {
-		this.lntype = lntype;
 	}
 
 	public int getTotalNotes() {
