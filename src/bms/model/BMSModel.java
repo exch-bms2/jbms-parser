@@ -109,6 +109,8 @@ public class BMSModel implements Comparable {
 	private TimeLine[] timelines = new TimeLine[0];
 
 	private int[] random;
+	
+	private ChartInformation info;
 
 	private Map<String, String> values = new HashMap<>();
 
@@ -370,6 +372,14 @@ public class BMSModel implements Comparable {
 		this.random = random;
 	}
 
+	public ChartInformation getChartInformation() {
+		return info;
+	}
+
+	public void setChartInformation(ChartInformation info) {
+		this.info = info;
+	}
+	
 	public String getStagefile() {
 		return stagefile;
 	}
