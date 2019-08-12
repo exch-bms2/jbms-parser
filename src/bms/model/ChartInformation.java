@@ -4,16 +4,19 @@ import java.nio.file.Path;
 
 public class ChartInformation {
 
-	private final byte[] data;
+	final byte[] data;
 	
 	public final Path path;
 	
-	private final int[] random;
+	public final int[] allRandoms;
 	
-	public ChartInformation(byte[] data, Path path, int[] random) {
+	public final int[] selectedRandoms;
+	
+	public ChartInformation(byte[] data, Path path, int[] allRandoms, int[] selectedRandoms) {
 		this.data = data;
 		this.path = path;
-		this.random = random;
+		this.allRandoms = allRandoms;
+		this.selectedRandoms = selectedRandoms;
 	}
 
 }
