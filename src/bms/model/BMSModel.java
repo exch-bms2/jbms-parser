@@ -11,10 +11,6 @@ import java.util.Map;
 public class BMSModel implements Comparable {
 
 	/**
-	 * BMSのファイルパス
-	 */
-	private String path;
-	/**
 	 * プレイヤー数
 	 */
 	private int player;
@@ -108,8 +104,6 @@ public class BMSModel implements Comparable {
 	 */
 	private TimeLine[] timelines = new TimeLine[0];
 
-	private int[] random;
-	
 	private ChartInformation info;
 
 	private Map<String, String> values = new HashMap<>();
@@ -364,14 +358,6 @@ public class BMSModel implements Comparable {
 		this.bgamap = bgamap;
 	}
 
-	public int[] getRandom() {
-		return random;
-	}
-
-	public void setRandom(int[] random) {
-		this.random = random;
-	}
-
 	public ChartInformation getChartInformation() {
 		return info;
 	}
@@ -412,14 +398,6 @@ public class BMSModel implements Comparable {
 		this.lntype = lntype;
 	}
 
-	public String getPath() {
-		return path;
-	}
-
-	public void setPath(String path) {
-		this.path = path;
-	}
-	
 	public int getTotalNotes() {
 		return BMSModelUtils.getTotalNotes(this);
 	}

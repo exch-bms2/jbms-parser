@@ -385,7 +385,6 @@ public class BMSONDecoder implements ChartDecoder {
 				+ (System.currentTimeMillis() - currnttime));
 		
 		model.setChartInformation(new ChartInformation(null, f, null, null));
-		model.setPath(f.toAbsolutePath().toString());
 		return model;
 	}
 	

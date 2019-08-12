@@ -48,7 +48,6 @@ public class BMSDecoder implements ChartDecoder {
 			if (model == null) {
 				return null;
 			}
-			model.setPath(f.toAbsolutePath().toString());
 			Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().length);
 			return model;
 		} catch (IOException e) {
