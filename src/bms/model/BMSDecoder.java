@@ -28,8 +28,6 @@ public class BMSDecoder implements ChartDecoder {
 	final List<String> bgalist = new ArrayList<String>(36 * 36);
 	private final int[] bm = new int[36 * 36];
 
-	private BMSGenerator generator;
-
 	public BMSDecoder() {
 		this(BMSModel.LNTYPE_LONGNOTE);
 	}
@@ -46,7 +44,7 @@ public class BMSDecoder implements ChartDecoder {
 	public BMSModel decode(Path f) {
 		Logger.getGlobal().fine("BMSファイル解析開始 :" + f.toString());
 		try {
-			BMSModel model = this.decode(f.toString(), Files.readAllBytes(f), f.toString().toLowerCase().endsWith(".pms"), null);
+			BMSModel model = this.decode(f, Files.readAllBytes(f), f.toString().toLowerCase().endsWith(".pms"), null);
 			if (model == null) {
 				return null;
 			}
@@ -59,6 +57,11 @@ public class BMSDecoder implements ChartDecoder {
 		}
 		return null;
 	}
+	
+	public BMSModel decode(ChartInformation info) {
+		return decode(info.path, info.data, info.path.toString().toLowerCase().endsWith(".pms"), info.selectedRandoms);
+	}
+
 
 	private final List<String>[] lines = new List[1000];
 
@@ -86,7 +89,7 @@ public class BMSDecoder implements ChartDecoder {
 	 * @param data
 	 * @return
 	 */
-	private BMSModel decode(String path, byte[] data, boolean ispms, int[] random) {
+	private BMSModel decode(Path path, byte[] data, boolean ispms, int[] selectedRandom) {
 		log.clear();
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
@@ -142,8 +145,8 @@ public class BMSDecoder implements ChartDecoder {
 						try {
 							final int r = Integer.parseInt(line.substring(8).trim());
 							randoms.add(r);
-							if (random != null) {
-								crandom.add(random[randoms.size() - 1]);
+							if (selectedRandom != null) {
+								crandom.add(selectedRandom[randoms.size() - 1]);
 							} else {
 								crandom.add((int) (Math.random() * r) + 1);
 								srandoms.add(crandom.getLast());
@@ -362,20 +365,20 @@ public class BMSDecoder implements ChartDecoder {
 			log.add(new DecodeLog(INFO, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
 			Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 
-			if (random == null) {
-				random = new int[randoms.size()];
-				final Iterator<Integer> ri = randoms.iterator();
-				for (int i = 0; i < random.length; i++) {
-					random[i] = ri.next();
+			if (selectedRandom == null) {
+				selectedRandom = new int[srandoms.size()];
+				final Iterator<Integer> ri = srandoms.iterator();
+				for (int i = 0; i < selectedRandom.length; i++) {
+					selectedRandom[i] = ri.next();
 				}
-				generator = new BMSGenerator(data, ispms, random);
 			}
-			random = new int[srandoms.size()];
-			final Iterator<Integer> ri = srandoms.iterator();
-			for (int i = 0; i < random.length; i++) {
-				random[i] = ri.next();
+			int[] allRandoms = new int[randoms.size()];
+			final Iterator<Integer> ri = randoms.iterator();
+			for (int i = 0; i < allRandoms.length; i++) {
+				allRandoms[i] = ri.next();
 			}
-			model.setRandom(random);
+			
+			model.setChartInformation(new ChartInformation(data, path, allRandoms, selectedRandom));
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
@@ -403,10 +406,6 @@ public class BMSDecoder implements ChartDecoder {
 			}
 		}
 		return true;
-	}
-
-	public BMSGenerator getBMSGenerator() {
-		return generator;
 	}
 
 	/**

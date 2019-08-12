@@ -42,6 +42,10 @@ public class BMSONDecoder implements ChartDecoder {
 		return decode(f.toPath());
 	}
 
+	public BMSModel decode(ChartInformation info) {
+		return decode(info.path);
+	}
+
 	public BMSModel decode(Path f) {
 		Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.toString());
 		log.clear();
@@ -379,6 +383,8 @@ public class BMSONDecoder implements ChartDecoder {
 
 		Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 				+ (System.currentTimeMillis() - currnttime));
+		
+		model.setChartInformation(new ChartInformation(null, f, null, null));
 		model.setPath(f.toAbsolutePath().toString());
 		return model;
 	}
