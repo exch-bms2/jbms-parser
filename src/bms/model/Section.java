@@ -3,7 +3,7 @@ package bms.model;
 import java.util.*;
 import java.util.Map.Entry;
 
-import bms.model.BMSDecoder.TimeLineCache;
+import bms.model.ChartDecoder.TimeLineCache;
 import bms.model.Layer.EventType;
 
 import static bms.model.DecodeLog.State.*;
@@ -35,6 +35,10 @@ public class Section {
 	public static final int P2_MINE_KEY_BASE = 14 * 36 + 1;
 
 	public static final int SCROLL = 1020;
+	
+	public static final int[] NOTE_CHANNELS = {P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE, 
+			P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE};
+
 	/**
 	 * 小節の拡大倍率
 	 */
@@ -43,8 +47,6 @@ public class Section {
 	 * POORアニメーション
 	 */
 	private int[] poor = new int[0];
-
-	private Mode mode = Mode.BEAT_5K;
 
 	private final BMSModel model;
 
@@ -60,7 +62,6 @@ public class Section {
 		this.log = log;
 		
 		channellines = new ArrayList<String>(lines.size());
-		mode = model.getMode() == Mode.POPN_9K ? Mode.POPN_9K : Mode.BEAT_5K;
 		if (prev != null) {
 			sectionnum = prev.sectionnum + prev.rate;
 		} else {
@@ -148,47 +149,38 @@ public class Section {
 				});
 				break;
 			}
-			// 通常ノート(1P側)
-			this.convert(channel, P1_KEY_BASE, line);
-			// 通常ノート(2P側)
-			this.convert(channel, P2_KEY_BASE, line);
-			// 不可視ノート(1P側)
-			this.convert(channel, P1_INVISIBLE_KEY_BASE, line);
-			// 不可視ノート(2P側)
-			this.convert(channel, P2_INVISIBLE_KEY_BASE, line);
-			// ロングノート(1P側)
-			this.convert(channel, P1_LONG_KEY_BASE, line);
-			// ロングノート(2P側)
-			this.convert(channel, P2_LONG_KEY_BASE, line);
-			// 地雷ノート(1P側)
-			this.convert(channel, P1_MINE_KEY_BASE, line);
-			// 地雷ノート(2P側)
-			this.convert(channel, P2_MINE_KEY_BASE, line);
-		}
-		if (model.getMode() == null || model.getMode().key < mode.key) {
-			model.setMode(mode);
+			
+			int basech = 0;
+			int ch2 = -1;
+			for(int ch : NOTE_CHANNELS) {
+				if (ch <= channel && channel <= ch + 8) {
+					basech = ch;
+					ch2 = channel - ch;					
+					channellines.add(line);
+					break;
+				}				
+			}
+			// 5/10KEY -> 7/14KEY
+			if(ch2 == 7 || ch2 == 8) {
+				final Mode mode = (model.getMode() == Mode.BEAT_5K) ? Mode.BEAT_7K : (model.getMode() == Mode.BEAT_10K ? Mode.BEAT_14K : null);
+				if(mode != null) {
+					this.processData(line, (pos, data) -> {
+						model.setMode(mode);
+					});
+				}
+			}
+			// 5/7KEY -> 10/14KEY			
+			if(basech == P2_KEY_BASE || basech == P2_INVISIBLE_KEY_BASE || basech == P2_LONG_KEY_BASE || basech ==P2_MINE_KEY_BASE) {
+				final Mode mode = (model.getMode() == Mode.BEAT_5K) ? Mode.BEAT_10K : (model.getMode() == Mode.BEAT_7K ? Mode.BEAT_14K : null);
+				if(mode != null) {
+					this.processData(line, (pos, data) -> {
+						model.setMode(mode);
+					});
+				}
+			}			
 		}
 	}
 	
-	private void convert(int channel, int ch, String line) {
-		if (ch <= channel && channel <= ch + 8) {
-			channel -= ch;			
-			if((mode == Mode.BEAT_5K || mode == Mode.BEAT_10K) && (channel == 7 || channel == 8)) {
-				this.processData(line, (pos, data) -> {
-					mode = (mode == Mode.BEAT_10K) ? Mode.BEAT_14K : ((mode == Mode.BEAT_5K) ? Mode.BEAT_7K : mode);
-				});
-			}
-			
-			if((mode == Mode.BEAT_5K || mode == Mode.BEAT_7K) && (ch == P2_KEY_BASE || ch == P2_INVISIBLE_KEY_BASE || ch == P2_LONG_KEY_BASE || ch ==P2_MINE_KEY_BASE)) {
-				this.processData(line, (pos, data) -> {
-					mode = (mode == Mode.BEAT_7K) ? Mode.BEAT_14K : ((mode == Mode.BEAT_5K) ? Mode.BEAT_10K : mode);
-				});
-			}
-			
-			channellines.add(line);
-		}
-	}
-
 	private int[] splitData(String line) {
 		final int findex = line.indexOf(":") + 1;
 		final int lindex = line.length();
