@@ -16,11 +16,7 @@ import static bms.model.DecodeLog.State.*;
  * 
  * @author exch
  */
-public class BMSDecoder implements ChartDecoder {
-
-	private int lntype;
-
-	private List<DecodeLog> log = new ArrayList<DecodeLog>();
+public class BMSDecoder extends ChartDecoder {
 
 	final List<String> wavlist = new ArrayList<String>(36 * 36);
 	private final int[] wm = new int[36 * 36];
@@ -35,10 +31,6 @@ public class BMSDecoder implements ChartDecoder {
 	public BMSDecoder(int lntype) {
 		this.lntype = lntype;
 		// 予約語の登録
-	}
-
-	public BMSModel decode(File f) {
-		return decode(f.toPath());
 	}
 
 	public BMSModel decode(Path f) {
@@ -117,9 +109,7 @@ public class BMSDecoder implements ChartDecoder {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
 				new DigestInputStream(new DigestInputStream(new ByteArrayInputStream(data), md5digest), sha256digest),
 				"MS932"));) {
-			if (ispms) {
-				model.setMode(Mode.POPN_9K);
-			}
+			model.setMode(ispms ? Mode.POPN_9K : Mode.BEAT_5K);
 			// Logger.getGlobal().info(
 			// "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
@@ -422,22 +412,6 @@ public class BMSDecoder implements ChartDecoder {
 			sb.append(Character.forDigit(b & 0xf, 16));
 		}
 		return sb.toString();
-	}
-
-	public DecodeLog[] getDecodeLog() {
-		return log.toArray(new DecodeLog[log.size()]);
-	}
-	
-	
-	public static class TimeLineCache {
-		
-		public final double time;
-		public final TimeLine timeline;
-		
-		public TimeLineCache(double time, TimeLine timeline) {
-			this.time = time;
-			this.timeline = timeline;
-		}
 	}
 }
 

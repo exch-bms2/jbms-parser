@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import java.util.logging.Logger;
 import static bms.model.DecodeLog.State.*;
 
-import bms.model.BMSDecoder.TimeLineCache;
 import bms.model.Layer.EventType;
 import bms.model.bmson.*;
 
@@ -22,24 +21,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * 
  * @author exch
  */
-public class BMSONDecoder implements ChartDecoder {
+public class BMSONDecoder extends ChartDecoder {
 
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	private BMSModel model;
 
-	private int lntype;
-
-	private List<DecodeLog> log = new ArrayList<DecodeLog>();
-
 	private final TreeMap<Integer, TimeLineCache> tlcache = new TreeMap<Integer, TimeLineCache>();
 
 	public BMSONDecoder(int lntype) {
 		this.lntype = lntype;
-	}
-
-	public BMSModel decode(File f) {
-		return decode(f.toPath());
 	}
 
 	public BMSModel decode(ChartInformation info) {

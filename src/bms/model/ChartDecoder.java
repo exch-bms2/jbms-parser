@@ -1,29 +1,51 @@
 package bms.model;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 譜面デコーダー
  * 
  * @author exch
  */
-public interface ChartDecoder {
+public abstract class ChartDecoder {
+
+	int lntype;
+
+	List<DecodeLog> log = new ArrayList<DecodeLog>();
 
 	/**
 	 * パスで指定したファイルをBMSModelに変換する
 	 * 
-	 * @param p
+	 * @param file
+	 *            譜面ファイル
+	 * @return 変換したBMSModel。失敗した場合はnull
+	 */
+	public BMSModel decode(File file) {
+		return decode(file.toPath());
+	}
+
+	/**
+	 * パスで指定したファイルをBMSModelに変換する
+	 * 
+	 * @param path
 	 *            譜面ファイルのパス
 	 * @return 変換したBMSModel。失敗した場合はnull
 	 */
-	public abstract BMSModel decode(Path p);
-
+	public BMSModel decode(Path path) {
+		return decode(new ChartInformation(path, lntype, null));		
+	}
+	
 	/**
 	 * デコードログを取得する
 	 * 
 	 * @return デコードログ
 	 */
-	public abstract DecodeLog[] getDecodeLog();
+	public DecodeLog[] getDecodeLog() {
+		return log.toArray(new DecodeLog[log.size()]);
+	}
 	
 	public abstract BMSModel decode(ChartInformation info);
 
@@ -77,4 +99,14 @@ public interface ChartDecoder {
 		return result;
 	}
 
+	public static class TimeLineCache {
+		
+		public final double time;
+		public final TimeLine timeline;
+		
+		public TimeLineCache(double time, TimeLine timeline) {
+			this.time = time;
+			this.timeline = timeline;
+		}
+	}
 }
