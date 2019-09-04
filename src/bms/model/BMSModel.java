@@ -65,10 +65,14 @@ public class BMSModel implements Comparable {
 	 * 判定ランク
 	 */
 	private int judgerank = 2;
+
+	private JudgeRankType judgerankType = JudgeRankType.BMS_RANK;
 	/**
 	 * TOTAL値
 	 */
-	private double total;
+	private double total = 100;
+
+	private TotalType totalType = TotalType.BMSON;
 	/**
 	 * 標準ボリューム
 	 */
@@ -539,5 +543,29 @@ public class BMSModel implements Comparable {
 			}
 		}
 		return sb.toString();
+	}
+
+	public JudgeRankType getJudgerankType() {
+		return judgerankType;
+	}
+
+	public void setJudgerankType(JudgeRankType judgerankType) {
+		this.judgerankType = judgerankType;
+	}
+
+	public TotalType getTotalType() {
+		return totalType;
+	}
+
+	public void setTotalType(TotalType totalType) {
+		this.totalType = totalType;
+	}
+
+	public enum JudgeRankType {
+		BMS_RANK, BMS_DEFEXRANK, BMSON_JUDGERANK;
+	}
+
+	public enum TotalType {
+		BMS, BMSON;
 	}
 }

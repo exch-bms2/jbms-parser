@@ -341,8 +341,11 @@ public class BMSDecoder extends ChartDecoder {
 				}
 			}
 
+			if (model.getTotalType() != BMSModel.TotalType.BMS) {
+				log.add(new DecodeLog(WARNING, "TOTALが未定義です"));
+			}
 			if (model.getTotal() <= 60.0) {
-				log.add(new DecodeLog(WARNING, "TOTALが未定義か、値が少なすぎます"));
+				log.add(new DecodeLog(WARNING, "TOTAL値が少なすぎます"));
 			}
 			if (tl.length > 0) {
 				if (tl[tl.length - 1].getTime() >= model.getLastTime() + 30000) {
@@ -471,13 +474,11 @@ enum CommandWord {
 	},
 	RANK {
 		public DecodeLog execute(BMSModel model, String arg) {
-			if (model.getJudgerank() >= 10) {
-				return null;
-			}
 			try {
 				final int rank = Integer.parseInt(arg);
 				if (rank >= 0 && rank < 5) {
 					model.setJudgerank(rank);
+					model.setJudgerankType(BMSModel.JudgeRankType.BMS_RANK);
 				} else {
 					return new DecodeLog(WARNING, "#RANKに規定外の数字が定義されています : " + rank);
 				}
@@ -491,10 +492,11 @@ enum CommandWord {
 		public DecodeLog execute(BMSModel model, String arg) {
 			try {
 				final int rank = Integer.parseInt(arg);
-				if (rank >= 10) {
+				if (rank >= 1) {
 					model.setJudgerank(rank);
+					model.setJudgerankType(BMSModel.JudgeRankType.BMS_DEFEXRANK);
 				} else {
-					return new DecodeLog(WARNING, "#DEFEXRANK 10以下はサポートしていません" + rank);
+					return new DecodeLog(WARNING, "#DEFEXRANK 1以下はサポートしていません" + rank);
 				}
 			} catch (NumberFormatException e) {
 				return new DecodeLog(WARNING, "#DEFEXRANKに数字が定義されていません");
@@ -505,7 +507,13 @@ enum CommandWord {
 	TOTAL {
 		public DecodeLog execute(BMSModel model, String arg) {
 			try {
-				model.setTotal(Double.parseDouble(arg));
+				final double total = Double.parseDouble(arg);
+				if(total > 0) {
+					model.setTotal(total);
+					model.setTotalType(BMSModel.TotalType.BMS);
+				} else {
+					return new DecodeLog(WARNING, "#TOTALが0以下です");
+				}
 			} catch (NumberFormatException e) {
 				return new DecodeLog(WARNING, "#TOTALに数字が定義されていません");
 			}

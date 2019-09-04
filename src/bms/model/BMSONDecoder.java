@@ -69,11 +69,25 @@ public class BMSONDecoder extends ChartDecoder {
 		}
 		model.setSubArtist(subartist.toString());
 		model.setGenre(bmson.info.genre);
-		model.setJudgerank(bmson.info.judge_rank);
-		if (model.getJudgerank() < 5) {
-			log.add(new DecodeLog(WARNING, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + model.getJudgerank()));
+
+		if (bmson.info.judge_rank < 0) {
+			log.add(new DecodeLog(WARNING, "judge_rankが0以下です。judge_rank = " + bmson.info.judge_rank));
+		} else if (bmson.info.judge_rank < 5) {
+			model.setJudgerank(bmson.info.judge_rank);
+			log.add(new DecodeLog(WARNING, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + bmson.info.judge_rank));
+			model.setJudgerankType(BMSModel.JudgeRankType.BMS_RANK);
+		} else {
+			model.setJudgerank(bmson.info.judge_rank);
+			model.setJudgerankType(BMSModel.JudgeRankType.BMSON_JUDGERANK);
 		}
-		model.setTotal(bmson.info.total);
+
+		if(bmson.info.total > 0) {
+			model.setTotal(bmson.info.total);
+			model.setTotalType(BMSModel.TotalType.BMSON);
+		} else {
+			log.add(new DecodeLog(WARNING, "totalが0以下です。total = " + bmson.info.total));
+		}
+
 		model.setBpm(bmson.info.init_bpm);
 		model.setPlaylevel(String.valueOf(bmson.info.level));
 		model.setMode(Mode.BEAT_7K);
