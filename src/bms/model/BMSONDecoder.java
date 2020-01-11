@@ -175,7 +175,7 @@ public class BMSONDecoder extends ChartDecoder {
 			}
 		}
 
-		String[] wavmap = new String[bmson.sound_channels.length];
+		String[] wavmap = new String[bmson.sound_channels.length + bmson.key_channels.length + bmson.mine_channels.length];
 		int id = 0;
 		long starttime = 0;
 		for (SoundChannel sc : bmson.sound_channels) {
@@ -307,6 +307,58 @@ public class BMSONDecoder extends ChartDecoder {
 			}
 			id++;
 		}
+		
+		for (MineChannel sc : bmson.key_channels) {
+			wavmap[id] = sc.name;
+			Arrays.sort(sc.notes, comparator);
+			final int length = sc.notes.length;
+			for (int i = 0; i < length; i++) {
+				final bms.model.bmson.MineNote n = sc.notes[i];
+				TimeLine tl = getTimeLine(n.y, resolution);
+
+				final int key = n.x > 0 && n.x <= keyassign.length ? keyassign[n.x - 1] : -1;
+				if (key >= 0) {
+					// BGノート
+					tl.setHiddenNote(key, new NormalNote(id));
+				}
+			}
+			id++;
+		}
+		for (MineChannel sc : bmson.mine_channels) {
+			wavmap[id] = sc.name;
+			Arrays.sort(sc.notes, comparator);
+			final int length = sc.notes.length;
+			for (int i = 0; i < length; i++) {
+				final bms.model.bmson.MineNote n = sc.notes[i];
+				TimeLine tl = getTimeLine(n.y, resolution);
+
+				final int key = n.x > 0 && n.x <= keyassign.length ? keyassign[n.x - 1] : -1;
+				if (key >= 0) {
+					boolean insideln = false;
+					if (lnlist[key] != null) {
+						final double section = (n.y / resolution);
+						for (LongNote ln : lnlist[key]) {
+							if (ln.getSection() < section && section <= ln.getPair().getSection()) {
+								insideln = true;
+								break;
+							}
+						}
+					}
+
+					if (insideln) {
+						log.add(new DecodeLog(WARNING,
+								"LN内に地雷ノートを定義しています - x :  " + n.x + " y : " + n.y));
+					} else if(tl.existNote(key)){
+						log.add(new DecodeLog(WARNING,
+								"地雷ノートを定義している位置に通常ノートが存在します - x :  " + n.x + " y : " + n.y));
+					} else {
+						tl.setNote(key, new MineNote(id, n.damage));						
+					}
+				}
+			}
+			id++;
+		}
+
 		model.setWavList(wavmap);
 		// BGA処理
 		if (bmson.bga != null && bmson.bga.bga_header != null) {

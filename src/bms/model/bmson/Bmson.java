@@ -13,6 +13,8 @@ public class Bmson {
 	public ScrollEvent[] scroll_events = {}; // Stop flow. value is StopTime.
 	public SoundChannel[] sound_channels = {}; // as Note data.
 	public BGA bga = new BGA(); // as BGA(movie) data.
+	public MineChannel[] mine_channels = {}; // as Mine Note data.
+	public MineChannel[] key_channels = {}; // as Key Note data.
 
 	public BpmEvent[] getBpmNotes() {
 		return bpm_events;
