@@ -7,15 +7,34 @@ package bms.model;
  */
 public class LongNote extends Note {
 	
+	/**
+	 * ロングノート終端かどうか
+	 */
 	private boolean end;
-	
+	/**
+	 * ペアになっているロングノート
+	 */
 	private LongNote pair;
-	
+	/**
+	 * ロングノートの種類
+	 */
 	private int type;
 	
+	/**
+	 * ロングノートの種類:未定義
+	 */
 	public static final int TYPE_UNDEFINED = 0;
+	/**
+	 * ロングノートの種類:ロングノート
+	 */
 	public static final int TYPE_LONGNOTE = 1;
+	/**
+	 * ロングノートの種類:チャージノート
+	 */
 	public static final int TYPE_CHARGENOTE = 2;
+	/**
+	 * ロングノートの種類:ヘルチャージノート
+	 */
 	public static final int TYPE_HELLCHARGENOTE = 3;
 	
 	/**
@@ -40,7 +59,7 @@ public class LongNote extends Note {
 		this.type = type;
 	}
 
-	protected void setPair(LongNote pair) {
+	public void setPair(LongNote pair) {
 		pair.pair = this;
 		this.pair = pair;
 		
