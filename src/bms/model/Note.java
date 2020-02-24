@@ -15,7 +15,7 @@ public abstract class Note implements Cloneable {
 	 */
 	private double section;
 	/**
-	 * ノートが配置されている時間
+	 * ノートが配置されている時間(us)
 	 */
 	private long time;
 
@@ -24,11 +24,11 @@ public abstract class Note implements Cloneable {
 	 */
 	private int wav;
 	/**
-	 * 音源IDの音の開始時間
+	 * 音源IDの音の開始時間(us)
 	 */
 	private long start;
 	/**
-	 * 音源IDの音を鳴らす長さ
+	 * 音源IDの音を鳴らす長さ(us)
 	 */
 	private long duration;
 	/**
@@ -38,9 +38,11 @@ public abstract class Note implements Cloneable {
 	/**
 	 * ノーツの演奏時間
 	 */
-	private long playtime;
-
-	private Note[] notes = EMPTYARRAY;
+	private int playtime;
+	/**
+	 * 同時演奏されるノート
+	 */
+	private Note[] layerednotes = EMPTYARRAY;
 
 	public int getWav() {
 		return wav;
@@ -62,6 +64,10 @@ public abstract class Note implements Cloneable {
 		return (int) (start / 1000);
 	}
 	
+	public long getMilliStarttime() {
+		return start / 1000;
+	}
+
 	public long getMicroStarttime() {
 		return start;
 	}
@@ -74,6 +80,10 @@ public abstract class Note implements Cloneable {
 		return (int) (duration / 1000);
 	}
 	
+	public long getMilliDuration() {
+		return duration / 1000;
+	}
+
 	public long getMicroDuration() {
 		return duration;
 	}
@@ -83,10 +93,10 @@ public abstract class Note implements Cloneable {
 	}
 
 	public int getPlayTime() {
-		return (int)playtime;
+		return playtime;
 	}
 
-	public void setPlayTime(long playtime) {
+	public void setPlayTime(int playtime) {
 		this.playtime = playtime;
 	}
 
@@ -102,6 +112,10 @@ public abstract class Note implements Cloneable {
 		return (int) (time / 1000);
 	}
 	
+	public long getMilliTime() {
+		return time / 1000;
+	}
+
 	public long getMicroTime() {
 		return time;
 	}
@@ -116,12 +130,12 @@ public abstract class Note implements Cloneable {
 		}
 		n.setSection(section);
 		n.setTime(time);
-		notes = Arrays.copyOf(notes, notes.length + 1);
-		notes[notes.length - 1] = n;
+		layerednotes = Arrays.copyOf(layerednotes, layerednotes.length + 1);
+		layerednotes[layerednotes.length - 1] = n;
 	}
 
 	public Note[] getLayeredNotes() {
-		return notes;
+		return layerednotes;
 	}
 
 	@Override

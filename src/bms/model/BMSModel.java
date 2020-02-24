@@ -271,6 +271,10 @@ public class BMSModel implements Comparable {
 	}
 
 	public int getLastTime() {
+		return (int) getLastMilliTime();
+	}
+
+	public long getLastMilliTime() {
 		final int keys = mode.key;
 		for (int i = timelines.length - 1;i >= 0;i--) {
 			final TimeLine tl = timelines[i];
@@ -278,7 +282,7 @@ public class BMSModel implements Comparable {
 				if (tl.existNote(lane) || tl.getHiddenNote(lane) != null
 						|| tl.getBackGroundNotes().length > 0 || tl.getBGA() != -1
 						|| tl.getLayer() != -1) {
-					return tl.getTime();
+					return tl.getMilliTime();
 				}
 			}
 		}
@@ -286,12 +290,16 @@ public class BMSModel implements Comparable {
 	}
 
 	public int getLastNoteTime() {
+		return (int) getLastNoteMilliTime();
+	}
+
+	public long getLastNoteMilliTime() {
 		final int keys = mode.key;
 		for (int i = timelines.length - 1;i >= 0;i--) {
 			final TimeLine tl = timelines[i];
 			for (int lane = 0; lane < keys; lane++) {
 				if (tl.existNote(lane)) {
-					return tl.getTime();
+					return tl.getMilliTime();
 				}
 			}
 		}

@@ -71,6 +71,10 @@ public class TimeLine {
 		return (int) (time / 1000);
 	}
 	
+	public long getMilliTime() {
+		return time / 1000;
+	}
+
 	public long getMicroTime() {
 		return time;
 	}
@@ -303,6 +307,10 @@ public class TimeLine {
 		return (int) (stop / 1000);
 	}
 	
+	public long getMilliStop() {
+		return stop / 1000;
+	}
+
 	public long getMicroStop() {
 		return stop;
 	}
