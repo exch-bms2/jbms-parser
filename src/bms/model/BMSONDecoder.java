@@ -159,12 +159,22 @@ public class BMSONDecoder extends ChartDecoder {
 				getTimeLine(scrolly, resolution).setScroll(bmson.scroll_events[scrollpos].rate);
 				scrollpos++;
 			} else if (bpmy <= stopy) {
-				getTimeLine(bpmy, resolution).setBPM(bmson.bpm_events[bpmpos].bpm);
+				if(bmson.bpm_events[bpmpos].bpm > 0) {
+					getTimeLine(bpmy, resolution).setBPM(bmson.bpm_events[bpmpos].bpm);					
+				} else {
+					log.add(new DecodeLog(WARNING,
+							"negative BPMはサポートされていません - y : " + bmson.bpm_events[bpmpos].y + " bpm : " + bmson.bpm_events[bpmpos].bpm));
+				}
 				bpmpos++;
 			} else if (stopy != Integer.MAX_VALUE) {
-				final TimeLine tl = getTimeLine(stopy, resolution);
-				tl.setStop((long) ((1000.0 * 1000 * 60 * 4 * bmson.stop_events[stoppos].duration)
-						/ (tl.getBPM() * resolution)));
+				if(bmson.stop_events[stoppos].duration >= 0) {
+					final TimeLine tl = getTimeLine(stopy, resolution);
+					tl.setStop((long) ((1000.0 * 1000 * 60 * 4 * bmson.stop_events[stoppos].duration)
+							/ (tl.getBPM() * resolution)));					
+				} else {
+					log.add(new DecodeLog(WARNING,
+							"negative STOPはサポートされていません - y : " + bmson.stop_events[stoppos].y + " bpm : " + bmson.stop_events[stoppos].duration));					
+				}
 				stoppos++;
 			}
 		}
