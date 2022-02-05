@@ -222,8 +222,8 @@ public class BMSONDecoder extends ChartDecoder {
 						for (LongNote ln : lnlist[key]) {
 							if (section == ln.getPair().getSection()) {
 								ln.getPair().setWav(id);
-								ln.getPair().setStarttime(starttime);
-								ln.getPair().setDuration(duration);
+								ln.getPair().setMicroStarttime(starttime);
+								ln.getPair().setMicroDuration(duration);
 								assigned = true;
 								break;
 							}

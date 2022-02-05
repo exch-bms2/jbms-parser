@@ -65,13 +65,17 @@ public class BMSModel implements Comparable {
 	 * 判定ランク
 	 */
 	private int judgerank = 2;
-
+	/**
+	 * 判定ランクのタイプ
+	 */
 	private JudgeRankType judgerankType = JudgeRankType.BMS_RANK;
 	/**
 	 * TOTAL値
 	 */
 	private double total = 100;
-
+	/**
+	 * TOTALのタイプ
+	 */
 	private TotalType totalType = TotalType.BMSON;
 	/**
 	 * 標準ボリューム
@@ -531,7 +535,7 @@ public class BMSModel implements Comparable {
 					LongNote ln = (LongNote)n;
 					if(!ln.isEnd()) {
 						final char[] lnchars = {'l','L','C','H'};
-						tlsb.append(lnchars[ln.getType()] + ln.getDuration());
+						tlsb.append(lnchars[ln.getType()] + ln.getMilliDuration());
 						write = true;
 					}
 				} else if(n instanceof MineNote) {

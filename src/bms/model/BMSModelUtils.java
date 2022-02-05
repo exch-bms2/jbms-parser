@@ -156,7 +156,7 @@ public class BMSModelUtils {
 		for (TimeLine tl : model.getAllTimeLines()) {
 			tl.setBPM(tl.getBPM() * freq);
 			tl.setStop((long) (tl.getMicroStop() / freq));
-			tl.setTime((long) (tl.getMicroTime() / freq));
+			tl.setMicroTime((long) (tl.getMicroTime() / freq));
 		}
 	}
 
@@ -176,11 +176,11 @@ public class BMSModelUtils {
 	public static long setStartNoteTime(BMSModel model, long starttime) {
 		long marginTime = 0;
 		for (TimeLine tl : model.getAllTimeLines()) {
-			if(tl.getTime() >= starttime) {
+			if(tl.getMilliTime() >= starttime) {
 				break;
 			}
 			if(tl.existNote()) {
-				marginTime = starttime - tl.getTime();
+				marginTime = starttime - tl.getMilliTime();
 				break;
 			}
 		}
@@ -189,7 +189,7 @@ public class BMSModelUtils {
 			double marginSection = marginTime * model.getAllTimeLines()[0].getBPM() / 240000;
 			for (TimeLine tl : model.getAllTimeLines()) {
 				tl.setSection(tl.getSection() + marginSection);
-				tl.setTime(tl.getMicroTime() + marginTime * 1000);
+				tl.setMicroTime(tl.getMicroTime() + marginTime * 1000);
 			}
 			
 			TimeLine[] tl2 = new TimeLine[model.getAllTimeLines().length + 1];

@@ -38,7 +38,7 @@ public abstract class Note implements Cloneable {
 	/**
 	 * ノーツの演奏時間
 	 */
-	private int playtime;
+	private long playtime;
 	/**
 	 * 同時演奏されるノート
 	 */
@@ -60,10 +60,6 @@ public abstract class Note implements Cloneable {
 		this.state = state;
 	}
 
-	public int getStarttime() {
-		return (int) (start / 1000);
-	}
-	
 	public long getMilliStarttime() {
 		return start / 1000;
 	}
@@ -72,14 +68,10 @@ public abstract class Note implements Cloneable {
 		return start;
 	}
 
-	public void setStarttime(long start) {
+	public void setMicroStarttime(long start) {
 		this.start = start;
 	}
 
-	public int getDuration() {
-		return (int) (duration / 1000);
-	}
-	
 	public long getMilliDuration() {
 		return duration / 1000;
 	}
@@ -88,15 +80,27 @@ public abstract class Note implements Cloneable {
 		return duration;
 	}
 
-	public void setDuration(long duration) {
+	public void setMicroDuration(long duration) {
 		this.duration = duration;
 	}
 
 	public int getPlayTime() {
+		return (int) (playtime / 1000);
+	}
+
+	public long getMilliPlayTime() {
+		return playtime / 1000;
+	}
+
+	public long getMicroPlayTime() {
 		return playtime;
 	}
 
 	public void setPlayTime(int playtime) {
+		this.playtime = playtime * 1000;
+	}
+
+	public void setMicroPlayTime(long playtime) {
 		this.playtime = playtime;
 	}
 
@@ -120,7 +124,7 @@ public abstract class Note implements Cloneable {
 		return time;
 	}
 
-	public void setTime(long time) {
+	public void setMicroTime(long time) {
 		this.time = time;
 	}
 
@@ -129,7 +133,7 @@ public abstract class Note implements Cloneable {
 			return;
 		}
 		n.setSection(section);
-		n.setTime(time);
+		n.setMicroTime(time);
 		layerednotes = Arrays.copyOf(layerednotes, layerednotes.length + 1);
 		layerednotes[layerednotes.length - 1] = n;
 	}

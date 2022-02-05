@@ -79,20 +79,20 @@ public class TimeLine {
 		return time;
 	}
 
-	protected void setTime(long time) {
+	protected void setMicroTime(long time) {
 		this.time = time;
 		for(Note n : notes) {
 			if(n != null) {
-				n.setTime(time);
+				n.setMicroTime(time);
 			}
 		}
 		for(Note n : hiddennotes) {
 			if(n != null) {
-				n.setTime(time);
+				n.setMicroTime(time);
 			}
 		}
 		for(Note n : bgnotes) {
-			n.setTime(time);
+			n.setMicroTime(time);
 		}
 	}
 
@@ -171,7 +171,7 @@ public class TimeLine {
 			return;
 		}
 		note.setSection(section);
-		note.setTime(time);
+		note.setMicroTime(time);
 	}
 
 	public void setHiddenNote(int lane, Note note) {
@@ -180,7 +180,7 @@ public class TimeLine {
 			return;
 		}
 		note.setSection(section);
-		note.setTime(time);
+		note.setMicroTime(time);
 	}
 
 	public boolean existHiddenNote() {
@@ -201,7 +201,7 @@ public class TimeLine {
 			return;
 		}
 		note.setSection(section);
-		note.setTime(time);
+		note.setMicroTime(time);
 		bgnotes = Arrays.copyOf(bgnotes, bgnotes.length + 1);
 		bgnotes[bgnotes.length - 1] = note;
 	}
