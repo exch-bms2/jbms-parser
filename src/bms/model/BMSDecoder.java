@@ -238,7 +238,7 @@ public class BMSDecoder extends ChartDecoder {
 									bm[ChartDecoder.parseInt36(line, 4)] = bgalist.size();
 									bgalist.add(file_name);
 								} catch (NumberFormatException e) {
-									log.add(new DecodeLog(WARNING, "#WAVxxは不十分な定義です : " + line));
+									log.add(new DecodeLog(WARNING, "#BMPxxは不十分な定義です : " + line));
 								}
 							} else {
 								log.add(new DecodeLog(WARNING, "#BMPxxは不十分な定義です : " + line));
