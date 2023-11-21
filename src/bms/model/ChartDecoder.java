@@ -99,6 +99,59 @@ public abstract class ChartDecoder {
 		return result;
 	}
 
+	public static int parseInt62(String s, int index) throws NumberFormatException {
+		int result = parseInt62(s.charAt(index), s.charAt(index + 1));
+		if (result == -1) {
+			throw new NumberFormatException();
+		}
+		return result;
+	}
+
+	public static int parseInt62(char c1, char c2) {
+		int result = 0;
+		if (c1 >= '0' && c1 <= '9') {
+			result = (c1 - '0') * 62;
+		} else if (c1 >= 'A' && c1 <= 'Z') {
+			result = ((c1 - 'A') + 10) * 62;
+		} else if (c1 >= 'a' && c1 <= 'z') {
+			result = ((c1 - 'a') + 36) * 62;
+		} else {
+			return -1;
+		}
+
+		if (c2 >= '0' && c2 <= '9') {
+			result += (c2 - '0');
+		} else if (c2 >= 'A' && c2 <= 'Z') {
+			result += (c2 - 'A') + 10;
+		} else if (c2 >= 'a' && c2 <= 'z') {
+			result += (c2 - 'a') + 36;
+		} else {
+			return -1;
+		}
+
+		return result;
+	}
+
+	public static String toBase62(int decimal) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0;i < 2;i++) {
+			int mod = (int)(decimal % 62);
+			if (mod < 10) {
+				sb.append(mod);
+			} else if (mod < 36) {
+				mod = mod - 10 + 'A';
+				sb.append((char) mod);
+			} else if (mod < 62) {
+				mod = mod - 36 + 'a';
+				sb.append((char) mod);
+			} else {
+				sb.append("0");
+			}
+			decimal = (int)(decimal / 62);
+		}
+		return new String(sb.reverse());
+	}
+
 	public static class TimeLineCache {
 		
 		public final double time;

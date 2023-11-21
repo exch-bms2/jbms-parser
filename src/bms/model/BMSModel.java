@@ -97,6 +97,10 @@ public class BMSModel implements Comparable {
 	 * BGA定義のIDとファイル名のマップ
 	 */
 	private String[] bgamap = new String[0];
+	/**
+	 * 進数指定
+	 */
+	private int base = 36;
 
 	private int lnmode = LongNote.TYPE_UNDEFINED;
 
@@ -579,5 +583,18 @@ public class BMSModel implements Comparable {
 
 	public enum TotalType {
 		BMS, BMSON;
+	}
+
+	public int getBase() {
+		return base;
+	}
+
+	public void setBase(int base) {
+		if (base == 62) {
+			this.base = base;
+		} else {
+			this.base = 36;
+		}
+		return;
 	}
 }
