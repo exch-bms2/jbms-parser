@@ -18,11 +18,11 @@ import static bms.model.DecodeLog.State.*;
  */
 public class BMSDecoder extends ChartDecoder {
 
-	final List<String> wavlist = new ArrayList<String>(36 * 36);
-	private final int[] wm = new int[36 * 36];
+	final List<String> wavlist = new ArrayList<String>(62 * 62);
+	private final int[] wm = new int[62 * 62];
 
-	final List<String> bgalist = new ArrayList<String>(36 * 36);
-	private final int[] bm = new int[36 * 36];
+	final List<String> bgalist = new ArrayList<String>(62 * 62);
+	private final int[] bm = new int[62 * 62];
 
 	public BMSDecoder() {
 		this(BMSModel.LNTYPE_LONGNOTE);
@@ -175,6 +175,7 @@ public class BMSDecoder extends ChartDecoder {
 						}
 					} else if (skip.isEmpty() || !skip.getLast()) {
 						final char c = line.charAt(1);
+						final int base = model.getBase();
 						if ('0' <= c && c <= '9' && line.length() > 6) {
 							// line = line.toUpperCase();
 							// 楽譜
@@ -209,7 +210,11 @@ public class BMSDecoder extends ChartDecoder {
 								try {
 									double bpm = Double.parseDouble(line.substring(7).trim());
 									if(bpm > 0) {
-										bpmtable.put(ChartDecoder.parseInt36(line, 4), bpm);
+										if(base == 62) {
+											bpmtable.put(ChartDecoder.parseInt62(line, 4), bpm);
+										} else {
+											bpmtable.put(ChartDecoder.parseInt36(line, 4), bpm);
+										}
 									} else {
 										log.add(new DecodeLog(WARNING, "#negative BPMはサポートされていません : " + line));
 									}
@@ -222,7 +227,11 @@ public class BMSDecoder extends ChartDecoder {
 							if (line.length() >= 8) {
 								try {
 									final String file_name = line.substring(7).trim().replace('\\', '/');
-									wm[ChartDecoder.parseInt36(line, 4)] = wavlist.size();
+									if(base == 62) {
+										wm[ChartDecoder.parseInt62(line, 4)] = wavlist.size();
+									} else {
+										wm[ChartDecoder.parseInt36(line, 4)] = wavlist.size();
+									}
 									wavlist.add(file_name);
 								} catch (NumberFormatException e) {
 									log.add(new DecodeLog(WARNING, "#WAVxxは不十分な定義です : " + line));
@@ -235,7 +244,11 @@ public class BMSDecoder extends ChartDecoder {
 							if (line.length() >= 8) {
 								try {
 									final String file_name = line.substring(7).trim().replace('\\', '/');
-									bm[ChartDecoder.parseInt36(line, 4)] = bgalist.size();
+									if(base == 62) {
+										bm[ChartDecoder.parseInt62(line, 4)] = bgalist.size();
+									} else {
+										bm[ChartDecoder.parseInt36(line, 4)] = bgalist.size();
+									}
 									bgalist.add(file_name);
 								} catch (NumberFormatException e) {
 									log.add(new DecodeLog(WARNING, "#BMPxxは不十分な定義です : " + line));
@@ -251,7 +264,11 @@ public class BMSDecoder extends ChartDecoder {
 										stop = Math.abs(stop);
 										log.add(new DecodeLog(WARNING, "#negative STOPはサポートされていません : " + line));
 									}
-									stoptable.put(ChartDecoder.parseInt36(line, 5), stop);
+									if(base == 62) {
+										stoptable.put(ChartDecoder.parseInt62(line, 5), stop);
+									} else {
+										stoptable.put(ChartDecoder.parseInt36(line, 5), stop);
+									}
 								} catch (NumberFormatException e) {
 									log.add(new DecodeLog(WARNING, "#STOPxxに数字が定義されていません : " + line));
 								}
@@ -262,7 +279,11 @@ public class BMSDecoder extends ChartDecoder {
 							if (line.length() >= 11) {
 								try {
 									double scroll = Double.parseDouble(line.substring(10).trim());
-									scrolltable.put(ChartDecoder.parseInt36(line, 7), scroll);
+									if(base == 62) {
+										scrolltable.put(ChartDecoder.parseInt62(line, 7), scroll);
+									} else {
+										scrolltable.put(ChartDecoder.parseInt36(line, 7), scroll);
+									}
 								} catch (NumberFormatException e) {
 									log.add(new DecodeLog(WARNING, "#SCROLLxxに数字が定義されていません : " + line));
 								}
@@ -551,9 +572,13 @@ enum CommandWord {
 	LNOBJ {
 		public DecodeLog execute(BMSModel model, String arg) {
 			try {
-				model.setLnobj(Integer.parseInt(arg.toUpperCase(), 36));
+				if (model.getBase() == 62) {
+					model.setLnobj(ChartDecoder.parseInt62(arg, 0));
+				} else {
+					model.setLnobj(Integer.parseInt(arg.toUpperCase(), 36));
+				}
 			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#PLAYERに数字が定義されていません");
+				return new DecodeLog(WARNING, "#LNOBJに数字が定義されていません");
 			}
 			return null;
 		}
@@ -567,7 +592,7 @@ enum CommandWord {
 				}
 				model.setLnmode(lnmode);
 			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#PLAYERに数字が定義されていません");
+				return new DecodeLog(WARNING, "#LNMODEに数字が定義されていません");
 			}
 			return null;
 		}
@@ -591,6 +616,20 @@ enum CommandWord {
 	COMMENT {
 		public DecodeLog execute(BMSModel model, String arg) {
 			// TODO 未実装
+			return null;
+		}
+	},
+	BASE {
+		public DecodeLog execute(BMSModel model, String arg) {
+			try {
+				int base = Integer.parseInt(arg);
+				if(base != 62) {
+					return new DecodeLog(WARNING, "#BASEに無効な数字が定義されています");
+				}
+				model.setBase(base);
+			} catch (NumberFormatException e) {
+				return new DecodeLog(WARNING, "#BASEに数字が定義されていません");
+			}
 			return null;
 		}
 	};

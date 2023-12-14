@@ -60,6 +60,7 @@ public class Section {
 			Map<Integer, Double> stoptable, Map<Integer, Double> scrolltable, List<DecodeLog> log) {
 		this.model = model;
 		this.log = log;
+		final int base = model.getBase();
 		
 		channellines = new ArrayList<String>(lines.size());
 		if (prev != null) {
@@ -93,6 +94,9 @@ public class Section {
 			// BPM変化
 			case BPM_CHANGE:
 				this.processData(line, (pos, data) -> {
+					if(base == 62) {
+						data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+					}
 					bpmchange.put(pos, (double) (data / 36) * 16 + (data % 36));
 				});
 				break;
@@ -182,12 +186,17 @@ public class Section {
 	}
 	
 	private int[] splitData(String line) {
+		final int base = model.getBase();
 		final int findex = line.indexOf(":") + 1;
 		final int lindex = line.length();
 		final int split = (lindex - findex) / 2;
 		int[] result = new int[split];
 		for (int i = 0; i < split; i++) {
-			result[i] = ChartDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			if (base == 62) {
+				result[i] = ChartDecoder.parseInt62(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			} else {
+				result[i] = ChartDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			}
 			if(result[i] == -1) {
 				log.add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
 				result[i] = 0;
@@ -197,11 +206,17 @@ public class Section {
 	}
 	
 	private void processData(String line, DataProcessor processor) {
+		final int base = model.getBase();
 		final int findex = line.indexOf(":") + 1;
 		final int lindex = line.length();
 		final int split = (lindex - findex) / 2;
+		int result;
 		for (int i = 0; i < split; i++) {
-			int result = ChartDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			if (base == 62) {
+				result = ChartDecoder.parseInt62(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			} else {
+				result = ChartDecoder.parseInt36(line.charAt(findex + i * 2), line.charAt(findex + i * 2 + 1));
+			}
 			if(result > 0) {
 				processor.process((double)i / split, result);
 			} else if(result == -1){
@@ -233,6 +248,7 @@ public class Section {
 		this.tlcache = tlcache;
 		final int[] cassign = model.getMode() == Mode.POPN_9K ? CHANNELASSIGN_POPN : 
 			(model.getMode() == Mode.BEAT_7K || model.getMode() == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
+		final int base = model.getBase();
 		// 小節線追加
 		final TimeLine basetl = getTimeLine(sectionnum);
 		basetl.setSectionLine(true);
@@ -469,6 +485,9 @@ public class Section {
 					}
 
 					if(!insideln) {
+						if(base == 62) {
+							data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+						}
 						tl.setNote(key, new MineNote(wavmap[0], data));								
 					} else {
 						log.add(new DecodeLog(WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
