@@ -7,6 +7,8 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 import static bms.model.DecodeLog.State.*;
@@ -293,7 +295,7 @@ public class BMSDecoder extends ChartDecoder {
 						} else {
 							for (CommandWord cw : CommandWord.values()) {
 								if (line.length() > cw.name().length() + 2 && matchesReserveWord(line, cw.name())) {
-									DecodeLog log = cw.execute(model, line.substring(cw.name().length() + 2).trim());
+									DecodeLog log = cw.function.apply(model, line.substring(cw.name().length() + 2).trim());
 									if (log != null) {
 										this.log.add(log);
 										Logger.getGlobal()
@@ -446,195 +448,164 @@ public class BMSDecoder extends ChartDecoder {
  */
 enum CommandWord {
 
-	PLAYER {
-		@Override
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				model.setPlayer(Integer.parseInt(arg));
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#PLAYERに数字が定義されていません");
+	PLAYER ((model, arg) -> {
+		try {
+			final int player = Integer.parseInt(arg);
+			// TODO playerの許容幅は？
+			if (player >= 1 && player < 3) {
+				model.setPlayer(player);
+			} else {
+				return new DecodeLog(WARNING, "#PLAYERに規定外の数字が定義されています : " + player);
 			}
-			return null;
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#PLAYERに数字が定義されていません");
 		}
-	},
-	GENRE {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setGenre(arg);
-			return null;
-		}
-	},
-	TITLE {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setTitle(arg);
-			return null;
-		}
-	},
-	SUBTITLE {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setSubTitle(arg);
-			return null;
-		}
-	},
-	ARTIST {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setArtist(arg);
-			return null;
-		}
-	},
-	SUBARTIST {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setSubArtist(arg);
-			return null;
-		}
-	},
-	PLAYLEVEL {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setPlaylevel(arg);
-			return null;
-		}
-	},
-	RANK {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				final int rank = Integer.parseInt(arg);
-				if (rank >= 0 && rank < 5) {
-					model.setJudgerank(rank);
-					model.setJudgerankType(BMSModel.JudgeRankType.BMS_RANK);
-				} else {
-					return new DecodeLog(WARNING, "#RANKに規定外の数字が定義されています : " + rank);
-				}
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#RANKに数字が定義されていません");
+		return null;
+	}),
+	GENRE ((model, arg) -> {
+		model.setGenre(arg);
+		return null;
+	}),
+	TITLE ((model, arg) -> {
+		model.setTitle(arg);
+		return null;
+	}),
+	SUBTITLE ((model, arg) -> {
+		model.setSubTitle(arg);
+		return null;
+	}),
+	ARTIST ((model, arg) -> {
+		model.setArtist(arg);
+		return null;
+	}),
+	SUBARTIST ((model, arg) -> {
+		model.setSubArtist(arg);
+		return null;
+	}),
+	PLAYLEVEL ((model, arg) -> {
+		model.setPlaylevel(arg);
+		return null;
+	}),
+	RANK ((model, arg) -> {
+		try {
+			final int rank = Integer.parseInt(arg);
+			if (rank >= 0 && rank < 5) {
+				model.setJudgerank(rank);
+				model.setJudgerankType(BMSModel.JudgeRankType.BMS_RANK);
+			} else {
+				return new DecodeLog(WARNING, "#RANKに規定外の数字が定義されています : " + rank);
 			}
-			return null;
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#RANKに数字が定義されていません");
 		}
-	},
-	DEFEXRANK {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				final int rank = Integer.parseInt(arg);
-				if (rank >= 1) {
-					model.setJudgerank(rank);
-					model.setJudgerankType(BMSModel.JudgeRankType.BMS_DEFEXRANK);
-				} else {
-					return new DecodeLog(WARNING, "#DEFEXRANK 1以下はサポートしていません" + rank);
-				}
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#DEFEXRANKに数字が定義されていません");
+		return null;
+	}),
+	DEFEXRANK ((model, arg) -> {
+		try {
+			final int rank = Integer.parseInt(arg);
+			if (rank >= 1) {
+				model.setJudgerank(rank);
+				model.setJudgerankType(BMSModel.JudgeRankType.BMS_DEFEXRANK);
+			} else {
+				return new DecodeLog(WARNING, "#DEFEXRANK 1以下はサポートしていません" + rank);
 			}
-			return null;
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#DEFEXRANKに数字が定義されていません");
 		}
-	},
-	TOTAL {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				final double total = Double.parseDouble(arg);
-				if(total > 0) {
-					model.setTotal(total);
-					model.setTotalType(BMSModel.TotalType.BMS);
-				} else {
-					return new DecodeLog(WARNING, "#TOTALが0以下です");
-				}
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#TOTALに数字が定義されていません");
+		return null;
+	}),
+	TOTAL ((model, arg) -> {
+		try {
+			final double total = Double.parseDouble(arg);
+			if(total > 0) {
+				model.setTotal(total);
+				model.setTotalType(BMSModel.TotalType.BMS);
+			} else {
+				return new DecodeLog(WARNING, "#TOTALが0以下です");
 			}
-			return null;
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#TOTALに数字が定義されていません");
 		}
-	},
-	VOLWAV {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				model.setVolwav(Integer.parseInt(arg));
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#VOLWAVに数字が定義されていません");
+		return null;
+	}),
+	VOLWAV ((model, arg) -> {
+		try {
+			model.setVolwav(Integer.parseInt(arg));
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#VOLWAVに数字が定義されていません");
+		}
+		return null;
+	}),
+	STAGEFILE ((model, arg) -> {
+		model.setStagefile(arg.replace('\\', '/'));
+		return null;
+	}),
+	BACKBMP ((model, arg) -> {
+		model.setBackbmp(arg.replace('\\', '/'));
+		return null;
+	}),
+	PREVIEW ((model, arg) -> {
+		model.setPreview(arg.replace('\\', '/'));
+		return null;
+	}),
+	LNOBJ ((model, arg) -> {
+		try {
+			if (model.getBase() == 62) {
+				model.setLnobj(ChartDecoder.parseInt62(arg, 0));
+			} else {
+				model.setLnobj(Integer.parseInt(arg.toUpperCase(), 36));
 			}
-			return null;
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#LNOBJに数字が定義されていません");
 		}
-	},
-	STAGEFILE {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setStagefile(arg.replace('\\', '/'));
-			return null;
-		}
-	},
-	BACKBMP {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setBackbmp(arg.replace('\\', '/'));
-			return null;
-		}
-	},
-	PREVIEW {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setPreview(arg.replace('\\', '/'));
-			return null;
-		}
-	},
-	LNOBJ {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				if (model.getBase() == 62) {
-					model.setLnobj(ChartDecoder.parseInt62(arg, 0));
-				} else {
-					model.setLnobj(Integer.parseInt(arg.toUpperCase(), 36));
-				}
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#LNOBJに数字が定義されていません");
+		return null;
+	}),
+	LNMODE ((model, arg) -> {
+		try {
+			int lnmode = Integer.parseInt(arg);
+			if(lnmode < 0 || lnmode > 3) {
+				return new DecodeLog(WARNING, "#LNMODEに無効な数字が定義されています");
 			}
-			return null;
+			model.setLnmode(lnmode);
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#LNMODEに数字が定義されていません");
 		}
-	},
-	LNMODE {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				int lnmode = Integer.parseInt(arg);
-				if(lnmode < 0 || lnmode > 3) {
-					return new DecodeLog(WARNING, "#LNMODEに無効な数字が定義されています");
-				}
-				model.setLnmode(lnmode);
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#LNMODEに数字が定義されていません");
+		return null;
+	}),
+	DIFFICULTY ((model, arg) -> {
+		try {
+			model.setDifficulty(Integer.parseInt(arg));
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#DIFFICULTYに数字が定義されていません");
+		}
+		return null;
+	}),
+	BANNER ((model, arg) -> {
+		model.setBanner(arg.replace('\\', '/'));
+		return null;
+	}),
+	COMMENT ((model, arg) -> {
+		// TODO 未実装
+		return null;
+	}),
+	BASE ((model, arg) -> {
+		try {
+			int base = Integer.parseInt(arg);
+			if(base != 62) {
+				return new DecodeLog(WARNING, "#BASEに無効な数字が定義されています");
 			}
-			return null;
+			model.setBase(base);
+		} catch (NumberFormatException e) {
+			return new DecodeLog(WARNING, "#BASEに数字が定義されていません");
 		}
-	},
-	DIFFICULTY {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				model.setDifficulty(Integer.parseInt(arg));
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#DIFFICULTYに数字が定義されていません");
-			}
-			return null;
-		}
-	},
-	BANNER {
-		public DecodeLog execute(BMSModel model, String arg) {
-			model.setBanner(arg.replace('\\', '/'));
-			return null;
-		}
-	},
-	COMMENT {
-		public DecodeLog execute(BMSModel model, String arg) {
-			// TODO 未実装
-			return null;
-		}
-	},
-	BASE {
-		public DecodeLog execute(BMSModel model, String arg) {
-			try {
-				int base = Integer.parseInt(arg);
-				if(base != 62) {
-					return new DecodeLog(WARNING, "#BASEに無効な数字が定義されています");
-				}
-				model.setBase(base);
-			} catch (NumberFormatException e) {
-				return new DecodeLog(WARNING, "#BASEに数字が定義されていません");
-			}
-			return null;
-		}
-	};
+		return null;
+	});
 
-	public abstract DecodeLog execute(BMSModel model, String arg);
+	public final BiFunction<BMSModel, String, DecodeLog> function;
+
+	private CommandWord(BiFunction<BMSModel, String, DecodeLog> function) {
+		this.function = function;
+	}
 }
 
 /**
@@ -644,13 +615,14 @@ enum CommandWord {
  */
 enum OptionWord {
 
-	URL {
-		public DecodeLog execute(BMSModel model, String arg) {
-			// TODO 未実装
-			return null;
-		}
-	};
+	URL ((model, arg) -> {
+		// TODO 未実装
+		return null;
+	});
 
-	public abstract DecodeLog execute(BMSModel model, String arg);
+	public final BiFunction<BMSModel, String, DecodeLog> function;
 
+	private OptionWord(BiFunction<BMSModel, String, DecodeLog> function) {
+		this.function = function;
+	}
 }
