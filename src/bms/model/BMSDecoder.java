@@ -8,7 +8,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.logging.Logger;
 
 import static bms.model.DecodeLog.State.*;
@@ -72,6 +71,8 @@ public class BMSDecoder extends ChartDecoder {
 	private final Deque<Integer> srandoms = new ArrayDeque<Integer>();
 	private final Deque<Integer> crandom = new ArrayDeque<Integer>();
 	private final Deque<Boolean> skip = new ArrayDeque<Boolean>();
+	
+	private static final CommandWord[] commandWords = CommandWord.values();
 
 	/**
 	 * 指定したBMSファイルをモデルにデコードする
@@ -120,7 +121,7 @@ public class BMSDecoder extends ChartDecoder {
 			Arrays.fill(wm, -2);
 			bgalist.clear();
 			Arrays.fill(bm, -2);
-			for (List l : lines) {
+			for (List<String> l : lines) {
 				if (l != null) {
 					l.clear();
 				}
@@ -293,13 +294,12 @@ public class BMSDecoder extends ChartDecoder {
 								log.add(new DecodeLog(WARNING, "#SCROLLxxは不十分な定義です : " + line));
 							}
 						} else {
-							for (CommandWord cw : CommandWord.values()) {
+							for (CommandWord cw : commandWords) {
 								if (line.length() > cw.name().length() + 2 && matchesReserveWord(line, cw.name())) {
 									DecodeLog log = cw.function.apply(model, line.substring(cw.name().length() + 2).trim());
 									if (log != null) {
 										this.log.add(log);
-										Logger.getGlobal()
-												.warning(model.getTitle() + " - " + log.getMessage() + " : " + line);
+										Logger.getGlobal().warning(model.getTitle() + " - " + log.getMessage() + " : " + line);
 									}
 									break;
 								}
@@ -395,6 +395,19 @@ public class BMSDecoder extends ChartDecoder {
 			}
 			
 			model.setChartInformation(new ChartInformation(path, lntype, selectedRandom));
+			log.forEach(log -> {
+				switch(log.getState()) {
+				case INFO:
+					Logger.getGlobal().info(path + " : " + log.getMessage());
+					break;
+				case WARNING:
+					Logger.getGlobal().warning(path + " : " + log.getMessage());
+					break;
+				case ERROR:
+					Logger.getGlobal().severe(path + " : " + log.getMessage());
+					break;
+				}
+			});
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
@@ -605,7 +618,7 @@ enum CommandWord {
 
 	private CommandWord(BiFunction<BMSModel, String, DecodeLog> function) {
 		this.function = function;
-	}
+	}	
 }
 
 /**
