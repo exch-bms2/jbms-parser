@@ -8,7 +8,7 @@ import java.util.Map;
  * 
  * @author exch
  */
-public class BMSModel implements Comparable {
+public class BMSModel implements Comparable<BMSModel> {
 
 	/**
 	 * プレイヤー数
@@ -322,8 +322,8 @@ public class BMSModel implements Comparable {
 		this.difficulty = difficulty;
 	}
 
-	public int compareTo(Object arg0) {
-		return this.title.compareTo(((BMSModel) arg0).title);
+	public int compareTo(BMSModel model) {
+		return this.title.compareTo(model.title);
 	}
 
 	public String getFullTitle() {
