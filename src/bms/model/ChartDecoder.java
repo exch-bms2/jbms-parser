@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * 譜面デコーダー
@@ -150,6 +151,22 @@ public abstract class ChartDecoder {
 			decimal = (int)(decimal / 62);
 		}
 		return new String(sb.reverse());
+	}
+	
+	protected void printLog(Path path) {
+		log.forEach(log -> {
+			switch(log.getState()) {
+			case INFO:
+				Logger.getGlobal().info(path + " : " + log.getMessage());
+				break;
+			case WARNING:
+				Logger.getGlobal().warning(path + " : " + log.getMessage());
+				break;
+			case ERROR:
+				Logger.getGlobal().severe(path + " : " + log.getMessage());
+				break;
+			}
+		});
 	}
 
 	public static class TimeLineCache {

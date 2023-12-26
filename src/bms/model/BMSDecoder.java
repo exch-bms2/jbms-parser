@@ -395,19 +395,7 @@ public class BMSDecoder extends ChartDecoder {
 			}
 			
 			model.setChartInformation(new ChartInformation(path, lntype, selectedRandom));
-			log.forEach(log -> {
-				switch(log.getState()) {
-				case INFO:
-					Logger.getGlobal().info(path + " : " + log.getMessage());
-					break;
-				case WARNING:
-					Logger.getGlobal().warning(path + " : " + log.getMessage());
-					break;
-				case ERROR:
-					Logger.getGlobal().severe(path + " : " + log.getMessage());
-					break;
-				}
-			});
+			printLog(path);
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
