@@ -9,10 +9,13 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 import static bms.model.DecodeLog.State.*;
 
 import bms.model.Layer.EventType;
 import bms.model.bmson.*;
+import bms.model.bmson.Note;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -90,12 +93,12 @@ public class BMSONDecoder extends ChartDecoder {
 
 		model.setBpm(bmson.info.init_bpm);
 		model.setPlaylevel(String.valueOf(bmson.info.level));
-		model.setMode(Mode.BEAT_7K);
-		for (Mode mode : Mode.values()) {
-			if (mode.hint.equals(bmson.info.mode_hint)) {
-				model.setMode(mode);
-				break;
-			}
+		final Mode mode = Mode.getMode(bmson.info.mode_hint);
+		if(mode != null) {
+			model.setMode(mode);			
+		} else {
+			log.add(new DecodeLog(WARNING, "非対応のmode_hintです。mode_hint = " + bmson.info.mode_hint));
+			model.setMode(Mode.BEAT_7K);
 		}
 		if (bmson.info.ln_type > 0 && bmson.info.ln_type <= 3) {
 			model.setLnmode(bmson.info.ln_type);
@@ -115,7 +118,7 @@ public class BMSONDecoder extends ChartDecoder {
 			}
 		}
 		List<LongNote>[] lnlist = new List[model.getMode().key];
-		Map<bms.model.bmson.Note, LongNote> lnup = new HashMap();
+		Map<Note, LongNote> lnup = new HashMap<Note, LongNote>();
 
 		model.setBanner(bmson.info.banner_image);
 		model.setBackbmp(bmson.info.back_image);
@@ -136,12 +139,7 @@ public class BMSONDecoder extends ChartDecoder {
 		}
 
 		final double resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
-		final Comparator<BMSONObject> comparator = new Comparator<BMSONObject>() {
-			@Override
-			public int compare(BMSONObject n1, BMSONObject n2) {
-				return n1.y - n2.y;
-			}
-		};
+		final Comparator<BMSONObject> comparator = (n1,n2) -> (n1.y - n2.y);
 
 		int bpmpos = 0;
 		int stoppos = 0;
@@ -440,25 +438,16 @@ public class BMSONDecoder extends ChartDecoder {
 			}
 			model.setBgaList(bgamap);
 		}
-		TimeLine[] tl = new TimeLine[tlcache.size()];
-		int tlcount = 0;
-		for(TimeLineCache tlc : tlcache.values()) {
-			tl[tlcount] = tlc.timeline;
-			tlcount++;
-		}
-		model.setAllTimeLine(tl);
+		model.setAllTimeLine(tlcache.values().stream().map(tlc -> tlc.timeline).collect(Collectors.toList()).toArray(new TimeLine[tlcache.size()]));
 
 		Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 				+ (System.currentTimeMillis() - currnttime));
 		
 		model.setChartInformation(new ChartInformation(f, lntype, null));
+		printLog(f);
 		return model;
 	}
 	
-	public DecodeLog[] getDecodeLog() {
-		return log.toArray(new DecodeLog[log.size()]);
-	}
-
 	private TimeLine getTimeLine(int y, double resolution) {
 		// Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
 		final TimeLineCache tlc = tlcache.get(y);
