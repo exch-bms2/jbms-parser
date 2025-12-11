@@ -107,11 +107,30 @@ public class BMSDecoder extends ChartDecoder {
 			return null;
 		}
 
+		String encoding = "MS932";
+		// Detect the Encoding
+		try (FileInputStream fis = new FileInputStream(path.toFile())) {
+            byte[] bytes = new byte[4];
+            fis.read(bytes, 0, 4);
+            encoding = encodingFromBOM(bytes);
+		} catch (IOException e) {
+			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
+			Logger.getGlobal()
+					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+			return null;
+		} catch (Exception e) {
+			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
+			Logger.getGlobal()
+					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
+				
 		int maxsec = 0;
 		// BMS読み込み、ハッシュ値取得
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
 				new DigestInputStream(new DigestInputStream(new ByteArrayInputStream(data), md5digest), sha256digest),
-				"MS932"));) {
+				encoding));) {
 			model.setMode(ispms ? Mode.POPN_9K : Mode.BEAT_5K);
 			// Logger.getGlobal().info(
 			// "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
@@ -440,6 +459,56 @@ public class BMSDecoder extends ChartDecoder {
 		}
 		return sb.toString();
 	}
+	
+    /**
+     * バイトオーダーマーク (BOM) に基づいてエンコーディングを推測します。
+     * 
+     * @param bytes チェックするバイト配列
+     * @return BOMに対応する文字コードを示す文字列。BOMが見つからない場合は"MS932"。
+     */
+    public static String encodingFromBOM(byte[] bytes) {
+
+        // BOM定義
+        final byte[] bomUTF8 = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+        final byte[] bomUTF16LE = {(byte) 0xFF, (byte) 0xFE};
+        final byte[] bomUTF16BE = {(byte) 0xFE, (byte) 0xFF};
+        final byte[] bomUTF32LE = {(byte) 0xFF, (byte) 0xFE, (byte) 0x00, (byte) 0x00};
+        final byte[] bomUTF32BE = {(byte) 0x00, (byte) 0x00, (byte) 0xFE, (byte) 0xFF};
+
+        // 4バイトチェック
+        if (bytes.length >= 4) {
+            byte[] prefix4 = Arrays.copyOf(bytes, 4);
+
+            if (Arrays.equals(prefix4, bomUTF32BE)) {
+                return "UTF-32BE";
+            } else if (Arrays.equals(prefix4, bomUTF32LE)) {
+                return "UTF-32LE";
+            }
+        }
+
+        // 3バイトチェック
+        if (bytes.length >= 3) {
+            byte[] prefix3 = Arrays.copyOf(bytes, 3);
+            
+            if (Arrays.equals(prefix3, bomUTF8)) {
+                return "UTF-8";
+            }
+        }
+
+        // 2バイトチェック
+        if (bytes.length >= 2) {
+            byte[] prefix2 = Arrays.copyOf(bytes, 2);
+
+            if (Arrays.equals(prefix2, bomUTF16BE)) {
+                return "UTF-16BE";
+            } else if (Arrays.equals(prefix2, bomUTF16LE)) {
+                return "UTF-16LE";
+            }
+        }
+
+        // BOMが見つからない場合、"MS932"を返す。
+        return "MS932";
+    }
 }
 
 /**
