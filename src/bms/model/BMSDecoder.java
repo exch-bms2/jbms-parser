@@ -543,9 +543,6 @@ public class BMSDecoder extends ChartDecoder {
                 if (!(decodedString.contains("\r\n") || decodedString.contains("\r") || decodedString.contains("\n") || decodedString.contains("#"))) {
                 	// BMSファイル特有のチェック条件: 改行コードと"#"がないことはありえない
                 	continue; 
-                } else if (decodedString.contains("\ufffd")) {
-                	// REPLACEMENT CHARACTER が含まれていたらだめ(UTFの場合)
-                	continue;                	
                 }
 
                 // 文字列を再度Byte列化して比較。一致すれば文字化けが存在しないため、正しいエンコーディングと推測できる。
