@@ -1,6 +1,8 @@
 package bms.model;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -110,9 +112,9 @@ public class BMSDecoder extends ChartDecoder {
 		String encoding = "MS932";
 		// Detect the Encoding
 		try (FileInputStream fis = new FileInputStream(path.toFile())) {
-            byte[] bytes = new byte[4];
-            fis.read(bytes, 0, 4);
-            encoding = encodingFromBOM(bytes);
+            byte[] bytes = new byte[1024];
+            fis.read(bytes, 0, 1024);
+            encoding = detectEncoding(bytes);
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
 			Logger.getGlobal()
@@ -508,6 +510,71 @@ public class BMSDecoder extends ChartDecoder {
 
         // BOMが見つからない場合、"MS932"を返す。
         return "MS932";
+    }
+
+    /**
+     * 文字化けを調べて、Charsetを推測する。
+     * @param bytes Charsetを調べるByte列。
+     * @return 登録されているCharsetごとに、Byte列を文字列化した後さらにByte列に逆変換して、
+     * 一致するなら、そのCharsetの名称。
+     * 最後まで見つからなかったら、MS932を返す。
+     */
+    public String encodingFromGarbled(byte[] bytes) {
+        List<Charset> encodingsToTry = new ArrayList<>();
+        encodingsToTry.add(Charset.forName("MS932")); // SHIFT-JISは最優先する
+        encodingsToTry.add(Charset.forName("UTF-8")); // UTF-8
+        encodingsToTry.add(Charset.forName("UTF-16BE")); // UTF-16BE
+        encodingsToTry.add(Charset.forName("UTF-16LE")); // UTF-16LE
+        encodingsToTry.add(Charset.forName("UTF-32BE")); // UTF-32BE
+        encodingsToTry.add(Charset.forName("UTF-32LE")); // UTF-32LE
+        // ここに同じように追加すれば対応Charsetをいくらでも増やせるけど、
+        // 他の本体が対応できないためUTFのみにした方がよさそう。
+        
+        for (Charset encoding : encodingsToTry) {
+            try {
+                // CharsetDecoderを使用して、デコードエラー時に例外をスローするように設定する
+                CharsetDecoder decoder = encoding.newDecoder();
+                decoder.onMalformedInput(CodingErrorAction.REPORT);
+                decoder.onUnmappableCharacter(CodingErrorAction.REPORT);
+                                
+                // バイト列を文字列にデコードする
+                String decodedString = decoder.decode(ByteBuffer.wrap(bytes)).toString();
+
+                if (!(decodedString.contains("\r\n") || decodedString.contains("\r") || decodedString.contains("\n") || decodedString.contains("#"))) {
+                	// BMSファイル特有のチェック条件: 改行コードと"#"がないことはありえない
+                	continue; 
+                } else if (decodedString.contains("\ufffd")) {
+                	// REPLACEMENT CHARACTER が含まれていたらだめ(UTFの場合)
+                	continue;                	
+                }
+
+                // 文字列を再度Byte列化して比較。一致すれば文字化けが存在しないため、正しいエンコーディングと推測できる。
+                if (Arrays.equals(bytes, decodedString.getBytes(encoding))) {
+                    return encoding.name();
+                }
+
+            } catch (CharacterCodingException e) {
+            	// デコードエラー
+            	continue;
+            } catch (Exception e) {
+                // その他のエラー
+                continue;
+            }
+        }
+
+        // すべて試行して見つからなかった場合、デフォルトとしてMS932を返す
+        return "MS932";
+    }
+    
+    public String detectEncoding(byte[] bytes) {
+    	String encoding = encodingFromBOM(bytes) ;
+    	
+    	// BOMが存在しない場合
+    	if (encoding == "MS932" ){
+    		encoding = encodingFromGarbled(bytes);
+    	}
+    	
+    	return encoding;
     }
 }
 
