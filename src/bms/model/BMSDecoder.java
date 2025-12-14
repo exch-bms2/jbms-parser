@@ -1,7 +1,6 @@
 package bms.model;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -523,7 +522,7 @@ public class BMSDecoder extends ChartDecoder {
         List<Charset> encodingsToTry = new ArrayList<>();
         encodingsToTry.add(Charset.forName("MS932")); // SHIFT-JISは最優先する
         encodingsToTry.add(Charset.forName("EUC-KR")); // 韓国語環境のBMSEが出力するため2010年以前にしばしば見られた
-		encodingsToTry.add(Charset.forName("UTF-8")); // UTF-8
+        encodingsToTry.add(Charset.forName("UTF-8")); // UTF-8
         encodingsToTry.add(Charset.forName("UTF-16BE")); // UTF-16BE
         encodingsToTry.add(Charset.forName("UTF-16LE")); // UTF-16LE
         encodingsToTry.add(Charset.forName("UTF-32BE")); // UTF-32BE
@@ -533,27 +532,27 @@ public class BMSDecoder extends ChartDecoder {
         
         for (Charset encoding : encodingsToTry) {
             try {
-                // CharsetDecoderを使用して、デコードエラー時に例外をスローするように設定する
-                CharsetDecoder decoder = encoding.newDecoder();
-                decoder.onMalformedInput(CodingErrorAction.REPORT);
-                decoder.onUnmappableCharacter(CodingErrorAction.REPORT);
-                                
                 // バイト列を文字列にデコードする
-                String decodedString = decoder.decode(ByteBuffer.wrap(bytes)).toString();
+                String decodedString = new String(bytes, encoding);
 
                 if (!(decodedString.contains("\r\n") || decodedString.contains("\r") || decodedString.contains("\n") || decodedString.contains("#"))) {
                 	// BMSファイル特有のチェック条件: 改行コードと"#"がないことはありえない
                 	continue; 
                 }
 
+                // マルチバイト文字を途中で切ってしまうと文字化けするため、最後の文字を無視
+                if (decodedString != null && decodedString.length() > 1) {
+                    decodedString = decodedString.substring(0, decodedString.length() - 1);
+                }
+                
+                // バイト配列のサイズを文字列の逆変換後のサイズに調整
+                byte[] newBytes = Arrays.copyOf(bytes, decodedString.getBytes(encoding).length);
+                
                 // 文字列を再度Byte列化して比較。一致すれば文字化けが存在しないため、正しいエンコーディングと推測できる。
-                if (Arrays.equals(bytes, decodedString.getBytes(encoding))) {
+                if (Arrays.equals(newBytes, decodedString.getBytes(encoding))) {
                     return encoding.name();
                 }
 
-            } catch (CharacterCodingException e) {
-            	// デコードエラー
-            	continue;
             } catch (Exception e) {
                 // その他のエラー
                 continue;
