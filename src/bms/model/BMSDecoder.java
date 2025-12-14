@@ -522,7 +522,8 @@ public class BMSDecoder extends ChartDecoder {
     public String encodingFromGarbled(byte[] bytes) {
         List<Charset> encodingsToTry = new ArrayList<>();
         encodingsToTry.add(Charset.forName("MS932")); // SHIFT-JISは最優先する
-        encodingsToTry.add(Charset.forName("UTF-8")); // UTF-8
+        encodingsToTry.add(Charset.forName("EUC-KR")); // 韓国語環境のBMSEが出力するため2010年以前にしばしば見られた
+		encodingsToTry.add(Charset.forName("UTF-8")); // UTF-8
         encodingsToTry.add(Charset.forName("UTF-16BE")); // UTF-16BE
         encodingsToTry.add(Charset.forName("UTF-16LE")); // UTF-16LE
         encodingsToTry.add(Charset.forName("UTF-32BE")); // UTF-32BE
