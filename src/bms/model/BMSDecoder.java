@@ -512,9 +512,9 @@ public class BMSDecoder extends ChartDecoder {
     }
 
     /**
-     * 文字化けを調べて、Charsetを推測する。
+     * 文字化けを調べて、Charsetを推測する。BOMがないことが前提条件。
      * @param bytes Charsetを調べるByte列。
-     * @return 登録されているCharsetごとに、Byte列を文字列化した後さらにByte列に逆変換して、
+     * @return 登録されているCharsetごとにByte列と文字列のラウンドトリップ変換して、
      * 一致するなら、そのCharsetの名称。
      * 最後まで見つからなかったら、MS932を返す。
      */
@@ -540,16 +540,22 @@ public class BMSDecoder extends ChartDecoder {
                 	continue; 
                 }
 
-                // マルチバイト文字を途中で切ってしまうと文字化けするため、最後の文字を無視
-                if (decodedString != null && decodedString.length() > 1) {
-                    decodedString = decodedString.substring(0, decodedString.length() - 1);
+                byte[] newBytes = decodedString.getBytes(encoding);
+                int correctCount = 0;
+                int length = Math.min(bytes.length, newBytes.length);
+
+                // Byte列を比較して一致する連続個数をカウント
+               for (int i = 0; i < length; i++) {
+                    if (bytes[i] == newBytes[i]) {
+                    	correctCount++;
+                    } else {
+                    	break;
+                    }
                 }
                 
-                // バイト配列のサイズを文字列の逆変換後のサイズに調整
-                byte[] newBytes = Arrays.copyOf(bytes, decodedString.getBytes(encoding).length);
-                
-                // 文字列を再度Byte列化して比較。一致すれば文字化けが存在しないため、正しいエンコーディングと推測できる。
-                if (Arrays.equals(newBytes, decodedString.getBytes(encoding))) {
+                // 連続で閾値以上一致するなら、正しいエンコーディングと推測する。
+                // 末端に4バイト未満の欠落や文字化けが発生しうることを考慮
+                if (correctCount > bytes.length - 4) {
                     return encoding.name();
                 }
 
