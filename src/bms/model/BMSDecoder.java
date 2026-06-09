@@ -111,8 +111,8 @@ public class BMSDecoder extends ChartDecoder {
 		String encoding = "MS932";
 		// Detect the Encoding
 		try (FileInputStream fis = new FileInputStream(path.toFile())) {
-            byte[] bytes = new byte[1024];
-            fis.read(bytes, 0, 1024);
+            byte[] bytes = new byte[1024 * 64];
+            fis.read(bytes, 0, 1024 * 64); // 後ろの方に＃TITLEなどがある場合があるため多めに読み込ませる;64KBで十分
             encoding = detectEncoding(bytes);
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
