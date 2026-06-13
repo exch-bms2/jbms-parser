@@ -126,7 +126,43 @@ public class BMSDecoder extends ChartDecoder {
 			e.printStackTrace();
 			return null;
 		}
-				
+		
+		// ファイルの最後まで読んで先に #BASE を確定することが必須
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data),encoding))) {
+			String line = null;
+			
+			while ((line = br.readLine()) != null) {
+				if (line.length() < 2) {
+					continue;
+				}
+				if(line.charAt(0) == '#') {
+					if (matchesReserveWord(line, "BASE")) {
+						if (line.charAt(5) == ' ') {
+							try {
+								final String arg = line.substring(6).trim();
+								int base = Integer.parseInt(arg);
+								if(base != 62 && base != 36 ) {
+									model.setBase(36);
+									log.add(new DecodeLog(WARNING, "#BASEに無効な数字が定義されています"));
+								} else {
+									model.setBase(base);
+								}
+							} catch (NumberFormatException e) {
+								model.setBase(36);
+								log.add(new DecodeLog(WARNING, "#BASEに数字が定義されていません"));
+							}
+						}
+					}
+				}
+			}	
+		} catch (IOException e) {
+			model.setBase(36);
+			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
+			Logger.getGlobal()
+					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+			e.printStackTrace();
+		}
+		
 		int maxsec = 0;
 		// BMS読み込み、ハッシュ値取得
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -726,18 +762,6 @@ enum CommandWord {
 	}),
 	COMMENT ((model, arg) -> {
 		// TODO 未実装
-		return null;
-	}),
-	BASE ((model, arg) -> {
-		try {
-			int base = Integer.parseInt(arg);
-			if(base != 62) {
-				return new DecodeLog(WARNING, "#BASEに無効な数字が定義されています");
-			}
-			model.setBase(base);
-		} catch (NumberFormatException e) {
-			return new DecodeLog(WARNING, "#BASEに数字が定義されていません");
-		}
 		return null;
 	});
 
