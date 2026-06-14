@@ -595,6 +595,5 @@ public class BMSModel implements Comparable<BMSModel> {
 		} else {
 			this.base = 36;
 		}
-		return;
 	}
 }
