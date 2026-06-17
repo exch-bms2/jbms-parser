@@ -46,7 +46,14 @@ public class TimeLine {
 	 * スクロールスピード
 	 */
 	private double scroll = 1.0;
-	
+	/**
+	 * ハイスピード倍率
+	 */
+	private double speed = 1.0;
+	/**
+	 * SPEED指定OBJの有無（必ずしも変化することを意味しない）
+	 */
+	private boolean speedObj = false;
 	/**
 	 * 表示するBGAのID
 	 */
@@ -325,5 +332,22 @@ public class TimeLine {
 
 	public void setScroll(double scroll) {
 		this.scroll = scroll;
+	}
+
+	public double getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
+
+	public boolean hasSpeedObj() {
+		return speedObj;
+	}
+
+	public void setSpeedObj(double speed) {
+		this.speed = speed;
+		this.speedObj = true;
 	}
 }

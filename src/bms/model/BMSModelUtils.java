@@ -193,8 +193,14 @@ public class BMSModelUtils {
 			}
 			
 			TimeLine[] tl2 = new TimeLine[model.getAllTimeLines().length + 1];
+			TimeLine first = model.getAllTimeLines()[0];
 			tl2[0] = new TimeLine(0, 0, model.getMode().key);
 			tl2[0].setBPM(model.getBpm());
+			if(first.hasSpeedObj()) {
+				tl2[0].setSpeedObj(first.getSpeed());
+			} else {
+				tl2[0].setSpeed(first.getSpeed());
+			}
 			for(int i = 1;i < tl2.length;i++) {
 				tl2[i] = model.getAllTimeLines()[i - 1];
 			}
