@@ -110,15 +110,8 @@ public class BMSDecoder extends ChartDecoder {
 
 		String encoding = "MS932";
 		// Detect the Encoding
-		try (FileInputStream fis = new FileInputStream(path.toFile())) {
-            byte[] bytes = new byte[1024 * 64];
-            fis.read(bytes, 0, 1024 * 64); // 後ろの方に＃TITLEなどがある場合があるため多めに読み込ませる;64KBで十分
-            encoding = detectEncoding(bytes);
-		} catch (IOException e) {
-			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
-			Logger.getGlobal()
-					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
-			return null;
+		try {
+			encoding = detectEncoding(data, Math.min(data.length, 1024 * 64));
 		} catch (Exception e) {
 			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
 			Logger.getGlobal()
@@ -353,11 +346,12 @@ public class BMSDecoder extends ChartDecoder {
 			final TreeMap<Double, TimeLineCache> timelines = new TreeMap<Double, TimeLineCache>();
 			final List<LongNote>[] lnlist = new List[model.getMode().key];
 			LongNote[] lnendstatus = new LongNote[model.getMode().key];
+			TimeLine[] lastNoteTimeLine = new TimeLine[model.getMode().key];
 			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 			basetl.setBPM(model.getBpm());
 			timelines.put(0.0, new TimeLineCache(0.0, basetl));
 			for (Section section : sections) {
-				section.makeTimeLines(wm, bm, timelines, lnlist, lnendstatus);
+				section.makeTimeLines(wm, bm, timelines, lnlist, lnendstatus, lastNoteTimeLine);
 			}
 			// Logger.getGlobal().info(
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
@@ -519,6 +513,10 @@ public class BMSDecoder extends ChartDecoder {
      * 最後まで見つからなかったら、MS932を返す。
      */
     public String encodingFromGarbled(byte[] bytes) {
+    	return encodingFromGarbled(bytes, bytes.length);
+    }
+
+    public String encodingFromGarbled(byte[] bytes, int length) {
         List<Charset> encodingsToTry = new ArrayList<>();
         encodingsToTry.add(Charset.forName("EUC-KR")); // 韓国語環境のBMSEが出力するため2010年以前にしばしば見られた
         encodingsToTry.add(Charset.forName("MS932")); // SHIFT-JIS
@@ -533,7 +531,7 @@ public class BMSDecoder extends ChartDecoder {
         for (Charset encoding : encodingsToTry) {
             try {
                 // バイト列を文字列にデコードする
-                String decodedString = new String(bytes, encoding);
+                String decodedString = new String(bytes, 0, length, encoding);
 
                 if (!(decodedString.contains("\r\n") || decodedString.contains("\r") || decodedString.contains("\n") || decodedString.contains("#"))) {
                 	// BMSファイル特有のチェック条件: 改行コードと"#"がないことはありえない
@@ -542,10 +540,10 @@ public class BMSDecoder extends ChartDecoder {
 
                 byte[] newBytes = decodedString.getBytes(encoding);
                 int correctCount = 0;
-                int length = Math.min(bytes.length, newBytes.length);
+                int compareLength = Math.min(length, newBytes.length);
 
                 // Byte列を比較して一致する連続個数をカウント
-               for (int i = 0; i < length; i++) {
+               for (int i = 0; i < compareLength; i++) {
                     if (bytes[i] == newBytes[i]) {
                     	correctCount++;
                     } else {
@@ -555,7 +553,7 @@ public class BMSDecoder extends ChartDecoder {
                 
                 // 連続で閾値以上一致するなら、正しいエンコーディングと推測する。
                 // 末端に4バイト未満の欠落や文字化けが発生しうることを考慮
-                if (correctCount > bytes.length - 4) {
+                if (correctCount > length - 4) {
                     return encoding.name();
                 }
 
@@ -570,11 +568,15 @@ public class BMSDecoder extends ChartDecoder {
     }
     
     public String detectEncoding(byte[] bytes) {
+    	return detectEncoding(bytes, bytes.length);
+    }
+    
+    public String detectEncoding(byte[] bytes, int length) {
     	String encoding = encodingFromBOM(bytes) ;
     	
     	// BOMが存在しない場合
     	if (encoding == "MS932" ){
-    		encoding = encodingFromGarbled(bytes);
+    		encoding = encodingFromGarbled(bytes, length);
     	}
     	
     	return encoding;
