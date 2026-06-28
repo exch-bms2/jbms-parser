@@ -35,6 +35,7 @@ public class Section {
 	public static final int P2_MINE_KEY_BASE = 14 * 36 + 1;
 
 	public static final int SCROLL = 1020;
+	public static final int SPEED = 1033;
 	
 	public static final int[] NOTE_CHANNELS = {P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE, 
 			P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE};
@@ -57,7 +58,7 @@ public class Section {
 	private List<String> channellines;
 
 	public Section(BMSModel model, Section prev, List<String> lines, Map<Integer, Double> bpmtable,
-			Map<Integer, Double> stoptable, Map<Integer, Double> scrolltable, List<DecodeLog> log) {
+			Map<Integer, Double> stoptable, Map<Integer, Double> scrolltable, Map<Integer, Double> speedtable, List<DecodeLog> log) {
 		this.model = model;
 		this.log = log;
 		final int base = model.getBase();
@@ -152,6 +153,16 @@ public class Section {
 					}
 				});
 				break;
+			case SPEED:
+				this.processData(line, (pos, data) -> {
+					Double sp = speedtable.get(data);
+					if (sp != null) {
+						speed.put(pos, sp);
+					} else {
+						log.add(new DecodeLog(WARNING, "未定義のSPEEDを参照しています : " + data));
+					}
+				});
+				break;
 			}
 			
 			int basech = 0;
@@ -232,6 +243,7 @@ public class Section {
 	private final TreeMap<Double, Double> bpmchange = new TreeMap<Double, Double>();
 	private final TreeMap<Double, Double> stop = new TreeMap<Double, Double>();
 	private final TreeMap<Double, Double> scroll = new TreeMap<Double, Double>();
+	private final TreeMap<Double, Double> speed = new TreeMap<Double, Double>();
 	
 	private static final int[] CHANNELASSIGN_BEAT5 = { 0, 1, 2, 3, 4, 5, -1, -1, -1, 6, 7, 8, 9, 10, 11, -1, -1, -1 };
 	private static final int[] CHANNELASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
@@ -274,12 +286,18 @@ public class Section {
 		Map.Entry<Double, Double> bce = bpms.hasNext() ? bpms.next() : null;
 		Iterator<Entry<Double, Double>> scrolls = scroll.entrySet().iterator();			
 		Map.Entry<Double, Double> sce = scrolls.hasNext() ? scrolls.next() : null;
+		Iterator<Entry<Double, Double>> speeds = speed.entrySet().iterator();
+		Map.Entry<Double, Double> spe = speeds.hasNext() ? speeds.next() : null;
 		
-		while(ste != null || bce != null || sce != null) {
+		while(ste != null || bce != null || sce != null || spe != null) {
 			final double bc = bce != null ? bce.getKey() : 2;
 			final double st = ste != null ? ste.getKey() : 2;
 			final double sc = sce != null ? sce.getKey() : 2;
-			if(sc <= st && sc <= bc) {
+			final double sp = spe != null ? spe.getKey() : 2;
+			if(sp <= sc && sp <= st && sp <= bc) {
+				getTimeLine(sectionnum + sp * rate).setSpeedObj(spe.getValue());
+				spe = speeds.hasNext() ? speeds.next() : null;
+			} else if(sc <= st && sc <= bc) {
 				getTimeLine(sectionnum + sc * rate).setScroll(sce.getValue());
 				sce = scrolls.hasNext() ? scrolls.next() : null;
 			} else if(bc <= st) {
@@ -523,11 +541,13 @@ public class Section {
 		Entry<Double, TimeLineCache> le = tlcache.lowerEntry(section);
 		double scroll = le.getValue().timeline.getScroll();
 		double bpm = le.getValue().timeline.getBPM();
+		double speed = le.getValue().timeline.getSpeed();
 		double time = le.getValue().time + le.getValue().timeline.getMicroStop() + (240000.0 * 1000 * (section  - le.getKey())) / bpm;			
 		
 		TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
 		tl.setBPM(bpm);
 		tl.setScroll(scroll);
+		tl.setSpeed(speed);
 		tlcache.put(section, new TimeLineCache(time, tl));
 		return tl;
 	}
