@@ -12,6 +12,7 @@ import java.util.function.BiFunction;
 import java.util.logging.Logger;
 
 import static bms.model.DecodeLog.State.*;
+import bms.model.TimeLineTreeMap.TimeLineEntry;
 
 /**
  * BMSファイルをBMSModelにデコードするクラス
@@ -65,9 +66,10 @@ public class BMSDecoder extends ChartDecoder {
 
 	private final List<String>[] lines = new List[1000];
 
-	private final Map<Integer, Double> scrolltable = new TreeMap<Integer, Double>();
-	private final Map<Integer, Double> stoptable = new TreeMap<Integer, Double>();
-	private final Map<Integer, Double> bpmtable = new TreeMap<Integer, Double>();
+	private final IntDoubleTreeMap scrolltable = new IntDoubleTreeMap();
+	private final IntDoubleTreeMap stoptable = new IntDoubleTreeMap();
+	private final IntDoubleTreeMap bpmtable = new IntDoubleTreeMap();
+	private final IntDoubleTreeMap speedtable = new IntDoubleTreeMap();
 	private final Deque<Integer> randoms = new ArrayDeque<Integer>();
 	private final Deque<Integer> srandoms = new ArrayDeque<Integer>();
 	private final Deque<Integer> crandom = new ArrayDeque<Integer>();
@@ -375,17 +377,17 @@ public class BMSDecoder extends ChartDecoder {
 			Section[] sections = new Section[maxsec + 1];
 			for (int i = 0; i <= maxsec; i++) {
 				sections[i] = new Section(model, prev, lines[i] != null ? lines[i] : Collections.EMPTY_LIST, bpmtable,
-						stoptable, scrolltable, log);
+						stoptable, scrolltable, speedtable, log);
 				prev = sections[i];
 			}
 
-			final TreeMap<Double, TimeLineCache> timelines = new TreeMap<Double, TimeLineCache>();
+			final TimeLineTreeMap timelines = new TimeLineTreeMap();
 			final List<LongNote>[] lnlist = new List[model.getMode().key];
 			LongNote[] lnendstatus = new LongNote[model.getMode().key];
 			TimeLine[] lastNoteTimeLine = new TimeLine[model.getMode().key];
 			final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 			basetl.setBPM(model.getBpm());
-			timelines.put(0.0, new TimeLineCache(0.0, basetl));
+			timelines.put(0.0, 0.0, basetl);
 			for (Section section : sections) {
 				section.makeTimeLines(wm, bm, timelines, lnlist, lnendstatus, lastNoteTimeLine);
 			}
@@ -393,7 +395,8 @@ public class BMSDecoder extends ChartDecoder {
 			// "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
 			TimeLine[] tl = new TimeLine[timelines.size()];
 			int tlcount = 0;
-			for(TimeLineCache tlc : timelines.values()) {
+			for(int i = 0; i < timelines.size(); i++) {
+				TimeLineEntry tlc = timelines.valueAt(i);
 				tl[tlcount] = tlc.timeline;
 				tlcount++;
 			}
@@ -409,7 +412,10 @@ public class BMSDecoder extends ChartDecoder {
 				if (lnendstatus[i] != null) {
 					log.add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
 					if(lnendstatus[i].getSection() != Double.MIN_VALUE) {
-						timelines.get(lnendstatus[i].getSection()).timeline.setNote(i,  null);
+						TimeLineEntry tlc = timelines.get(lnendstatus[i].getSection());
+						if(tlc != null) {
+							tlc.timeline.setNote(i,  null);
+						}
 					}
 				}
 			}

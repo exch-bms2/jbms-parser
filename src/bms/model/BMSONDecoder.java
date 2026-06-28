@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import static bms.model.DecodeLog.State.*;
 
 import bms.model.Layer.EventType;
+import bms.model.TimeLineTreeMap.TimeLineEntry;
 import bms.model.bmson.*;
 import bms.model.bmson.Note;
 
@@ -30,7 +31,7 @@ public class BMSONDecoder extends ChartDecoder {
 
 	private BMSModel model;
 
-	private final TreeMap<Integer, TimeLineCache> tlcache = new TreeMap<Integer, TimeLineCache>();
+	private final TreeMap<Integer, TimeLineEntry> tlcache = new TreeMap<Integer, TimeLineEntry>();
 
 	public BMSONDecoder(int lntype) {
 		this.lntype = lntype;
@@ -105,16 +106,13 @@ public class BMSONDecoder extends ChartDecoder {
 		}
 		final int[] keyassign;
 		switch (model.getMode()) {
-		case BEAT_5K:
-			keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5 };
-			break;
-		case BEAT_10K:
-			keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5, 6, 7, 8, 9, 10, -1, -1, 11 };
-			break;
-		default:
-			keyassign = new int[model.getMode().key];
-			for (int i = 0; i < keyassign.length; i++) {
-				keyassign[i] = i;
+			case BEAT_5K -> keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5 };
+			case BEAT_10K -> keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5, 6, 7, 8, 9, 10, -1, -1, 11 };
+			default -> {
+				keyassign = new int[model.getMode().key];
+				for (int i = 0; i < keyassign.length; i++) {
+					keyassign[i] = i;
+				}
 			}
 		}
 		List<LongNote>[] lnlist = new List[model.getMode().key];
@@ -126,7 +124,7 @@ public class BMSONDecoder extends ChartDecoder {
 		model.setPreview(bmson.info.preview_music);
 		final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 		basetl.setBPM(model.getBpm());
-		tlcache.put(0, new TimeLineCache(0.0, basetl));
+		tlcache.put(0, new TimeLineEntry(0.0, basetl));
 
 		if (bmson.bpm_events == null) {
 			bmson.bpm_events = new BpmEvent[0];
@@ -262,7 +260,7 @@ public class BMSONDecoder extends ChartDecoder {
 								}
 							} else {
 								boolean existNote = false;
-								for (TimeLineCache tl2 : tlcache.subMap(n.y, false, n.y + n.l, true).values()) {
+								for (TimeLineEntry tl2 : tlcache.subMap(n.y, false, n.y + n.l, true).values()) {
 									if (tl2.timeline.existNote(key)) {
 										existNote = true;
 										break;
@@ -450,19 +448,19 @@ public class BMSONDecoder extends ChartDecoder {
 	
 	private TimeLine getTimeLine(int y, double resolution) {
 		// Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
-		final TimeLineCache tlc = tlcache.get(y);
+		final TimeLineEntry tlc = tlcache.get(y);
 		if (tlc != null) {
 			return tlc.timeline;
 		}
 
-		Entry<Integer, TimeLineCache> le = tlcache.lowerEntry(y);
+		Entry<Integer, TimeLineEntry> le = tlcache.lowerEntry(y);
 		double bpm = le.getValue().timeline.getBPM();
 		double time = le.getValue().time + le.getValue().timeline.getMicroStop()
 				+ (240000.0 * 1000 * ((y - le.getKey()) / resolution)) / bpm;
 
 		TimeLine tl = new TimeLine(y / resolution, (long) time, model.getMode().key);
 		tl.setBPM(bpm);
-		tlcache.put(y, new TimeLineCache(time, tl));
+		tlcache.put(y, new TimeLineEntry(time, tl));
 		// System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +
 		// tl.getTime());
 		return tl;

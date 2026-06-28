@@ -156,27 +156,10 @@ public abstract class ChartDecoder {
 	protected void printLog(Path path) {
 		log.forEach(log -> {
 			switch(log.getState()) {
-			case INFO:
-				Logger.getGlobal().info(path + " : " + log.getMessage());
-				break;
-			case WARNING:
-				Logger.getGlobal().warning(path + " : " + log.getMessage());
-				break;
-			case ERROR:
-				Logger.getGlobal().severe(path + " : " + log.getMessage());
-				break;
+			case INFO -> Logger.getGlobal().info(path + " : " + log.getMessage());
+			case WARNING -> Logger.getGlobal().warning(path + " : " + log.getMessage());
+			case ERROR -> Logger.getGlobal().severe(path + " : " + log.getMessage());
 			}
 		});
-	}
-
-	public static class TimeLineCache {
-		
-		public final double time;
-		public final TimeLine timeline;
-		
-		public TimeLineCache(double time, TimeLine timeline) {
-			this.time = time;
-			this.timeline = timeline;
-		}
 	}
 }

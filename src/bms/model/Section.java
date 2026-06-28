@@ -3,8 +3,8 @@ package bms.model;
 import java.util.*;
 import java.util.Map.Entry;
 
-import bms.model.ChartDecoder.TimeLineCache;
 import bms.model.Layer.EventType;
+import bms.model.TimeLineTreeMap.TimeLineEntry;
 
 import static bms.model.DecodeLog.State.*;
 
@@ -36,7 +36,7 @@ public class Section {
 
 	public static final int SCROLL = 1020;
 	public static final int SPEED = 1033;
-	
+
 	public static final int[] NOTE_CHANNELS = {P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE, 
 			P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE};
 
@@ -57,8 +57,8 @@ public class Section {
 	
 	private List<String> channellines;
 
-	public Section(BMSModel model, Section prev, List<String> lines, Map<Integer, Double> bpmtable,
-			Map<Integer, Double> stoptable, Map<Integer, Double> scrolltable, Map<Integer, Double> speedtable, List<DecodeLog> log) {
+	public Section(BMSModel model, Section prev, List<String> lines, IntDoubleTreeMap bpmtable,
+			IntDoubleTreeMap stoptable, IntDoubleTreeMap scrolltable, IntDoubleTreeMap speedtable, List<DecodeLog> log) {
 		this.model = model;
 		this.log = log;
 		final int base = model.getBase();
@@ -123,9 +123,9 @@ public class Section {
 			// BPM変化(拡張)
 			case BPM_CHANGE_EXTEND:
 				this.processData(line, (pos, data) -> {
-					Double bpm = bpmtable.get(data);
-					if (bpm != null) {
-						bpmchange.put(pos, bpm);
+					int bpmIndex = bpmtable.indexOf(data);
+					if (bpmIndex >= 0) {
+						bpmchange.put(pos, bpmtable.valueAt(bpmIndex));
 					} else {
 						log.add(new DecodeLog(WARNING, "未定義のBPM変化を参照しています : " + data));
 					}
@@ -134,9 +134,9 @@ public class Section {
 			// ストップシーケンス
 			case STOP:
 				this.processData(line, (pos, data) -> {
-					Double st = stoptable.get(data);
-					if (st != null) {
-						stop.put(pos, st);
+					final int stopIndex = stoptable.indexOf(data);
+					if (stopIndex >= 0) {
+						stop.put(pos, stoptable.valueAt(stopIndex));
 					} else {
 						log.add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + data));
 					}
@@ -145,9 +145,9 @@ public class Section {
 				// scroll
 			case SCROLL:
 				this.processData(line, (pos, data) -> {
-					Double st = scrolltable.get(data);
-					if (st != null) {
-						scroll.put(pos, st);
+					final int scrollIndex = scrolltable.indexOf(data);
+					if (scrollIndex >= 0) {
+						scroll.put(pos, scrolltable.valueAt(scrollIndex));
 					} else {
 						log.add(new DecodeLog(WARNING, "未定義のSCROLLを参照しています : " + data));
 					}
@@ -155,9 +155,9 @@ public class Section {
 				break;
 			case SPEED:
 				this.processData(line, (pos, data) -> {
-					Double sp = speedtable.get(data);
-					if (sp != null) {
-						speed.put(pos, sp);
+					final int speedIndex = speedtable.indexOf(data);
+					if (speedIndex >= 0) {
+						speed.put(pos, speedtable.valueAt(speedIndex));
 					} else {
 						log.add(new DecodeLog(WARNING, "未定義のSPEEDを参照しています : " + data));
 					}
@@ -244,17 +244,17 @@ public class Section {
 	private final TreeMap<Double, Double> stop = new TreeMap<Double, Double>();
 	private final TreeMap<Double, Double> scroll = new TreeMap<Double, Double>();
 	private final TreeMap<Double, Double> speed = new TreeMap<Double, Double>();
-	
+
 	private static final int[] CHANNELASSIGN_BEAT5 = { 0, 1, 2, 3, 4, 5, -1, -1, -1, 6, 7, 8, 9, 10, 11, -1, -1, -1 };
 	private static final int[] CHANNELASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
 	private static final int[] CHANNELASSIGN_POPN = { 0, 1, 2, 3, 4, -1,-1,-1,-1,-1, 5, 6, 7, 8,-1,-1,-1,-1 };
 
-	private TreeMap<Double, TimeLineCache> tlcache;
+	private TimeLineTreeMap tlcache;
 
 	/**
 	 * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
 	 */
-	public void makeTimeLines(int[] wavmap, int[] bgamap, TreeMap<Double, TimeLineCache> tlcache, List<LongNote>[] lnlist, LongNote[] startln, TimeLine[] lastNoteTimeLine) {
+	public void makeTimeLines(int[] wavmap, int[] bgamap, TimeLineTreeMap tlcache, List<LongNote>[] lnlist, LongNote[] startln, TimeLine[] lastNoteTimeLine) {
 		final int lnobj = model.getLnobj();
 		final int lnmode = model.getLnmode();
 		this.tlcache = tlcache;
@@ -288,7 +288,7 @@ public class Section {
 		Map.Entry<Double, Double> sce = scrolls.hasNext() ? scrolls.next() : null;
 		Iterator<Entry<Double, Double>> speeds = speed.entrySet().iterator();
 		Map.Entry<Double, Double> spe = speeds.hasNext() ? speeds.next() : null;
-		
+
 		while(ste != null || bce != null || sce != null || spe != null) {
 			final double bc = bce != null ? bce.getKey() : 2;
 			final double st = ste != null ? ste.getKey() : 2;
@@ -434,8 +434,8 @@ public class Section {
 						startln[key] = null;
 					} else {
 						// LN終端処理
-						for (Map.Entry<Double, TimeLineCache> e : tlcache.subMap(startln[key].getSection(), false, tl.getSection(), false).descendingMap().entrySet()) {
-							final TimeLine tl2 = e.getValue().timeline;									
+						for (int i = tlcache.lowerIndex(tl.getSection()); i >= 0 && tlcache.keyAt(i) > startln[key].getSection(); i--) {
+							final TimeLine tl2 = tlcache.valueAt(i).timeline;
 							if(tl2.existNote(key)){
 								Note note = tl2.getNote(key);
 								log.add(new DecodeLog(WARNING, "LN内に通常ノートが存在します。レーン: "
@@ -533,22 +533,24 @@ public class Section {
 	}
 	
 	private TimeLine getTimeLine(double section) {
-		final TimeLineCache tlc = tlcache.get(section);
+		final TimeLineEntry tlc = tlcache.get(section);
 		if (tlc != null) {
 			return tlc.timeline;
 		}
 		
-		Entry<Double, TimeLineCache> le = tlcache.lowerEntry(section);
-		double scroll = le.getValue().timeline.getScroll();
-		double bpm = le.getValue().timeline.getBPM();
-		double speed = le.getValue().timeline.getSpeed();
-		double time = le.getValue().time + le.getValue().timeline.getMicroStop() + (240000.0 * 1000 * (section  - le.getKey())) / bpm;			
+		int lowerIndex = tlcache.lowerIndex(section);
+		double lowerSection = tlcache.keyAt(lowerIndex);
+		TimeLineEntry lower = tlcache.valueAt(lowerIndex);
+		double scroll = lower.timeline.getScroll();
+		double bpm = lower.timeline.getBPM();
+        double speed = lower.timeline.getSpeed();
+		double time = lower.time + lower.timeline.getMicroStop() + (240000.0 * 1000 * (section  - lowerSection)) / bpm;
 		
 		TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
 		tl.setBPM(bpm);
 		tl.setScroll(scroll);
-		tl.setSpeed(speed);
-		tlcache.put(section, new TimeLineCache(time, tl));
+        tl.setSpeed(speed);
+		tlcache.put(section, time, tl);
 		return tl;
 	}
 }
