@@ -1,7 +1,6 @@
 package bms.model;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -39,11 +38,16 @@ public class BMSONDecoder extends ChartDecoder {
 
 	public BMSModel decode(ChartInformation info) {
 		this.lntype = info.lntype;
-		return decode(info.path);
+		return decodeSource(info);
 	}
 
 	public BMSModel decode(Path f) {
-		Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.toString());
+		return decode(new ChartInformation(f, lntype, null));
+	}
+
+	private BMSModel decodeSource(ChartInformation info) {
+		final String location = info.source.location();
+		Logger.getGlobal().fine("BMSONファイル解析開始 :" + location);
 		log.clear();
 		tlcache.clear();
 		final long currnttime = System.currentTimeMillis();
@@ -52,8 +56,10 @@ public class BMSONDecoder extends ChartDecoder {
 		Bmson bmson = null;
 		try {
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			bmson = mapper.readValue(new DigestInputStream(new BufferedInputStream(Files.newInputStream(f)), digest),
-					Bmson.class);
+			try (InputStream input = info.source.openStream()) {
+				bmson = mapper.readValue(new DigestInputStream(new BufferedInputStream(input), digest),
+						Bmson.class);
+			}
 			model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
 		} catch (NoSuchAlgorithmException | IOException e) {
 			e.printStackTrace();
@@ -438,11 +444,11 @@ public class BMSONDecoder extends ChartDecoder {
 		}
 		model.setAllTimeLine(tlcache.values().stream().map(tlc -> tlc.timeline).collect(Collectors.toList()).toArray(new TimeLine[tlcache.size()]));
 
-		Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.toString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
+		Logger.getGlobal().fine("BMSONファイル解析完了 :" + location + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
 				+ (System.currentTimeMillis() - currnttime));
 		
-		model.setChartInformation(new ChartInformation(f, lntype, null));
-		printLog(f);
+		model.setChartInformation(new ChartInformation(info.source, lntype, info.selectedRandoms));
+		printLog(location);
 		return model;
 	}
 	

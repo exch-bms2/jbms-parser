@@ -2,7 +2,6 @@ package bms.model;
 
 import java.io.*;
 import java.nio.charset.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -38,27 +37,23 @@ public class BMSDecoder extends ChartDecoder {
 
 	public BMSModel decode(Path f) {
 		Logger.getGlobal().fine("BMSファイル解析開始 :" + f.toString());
-		try {
-			BMSModel model = this.decode(f, Files.readAllBytes(f), f.toString().toLowerCase().endsWith(".pms"), null);
-			if (model == null) {
-				return null;
-			}
-			Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().length);
-			return model;
-		} catch (IOException e) {
-			log.add(new DecodeLog(ERROR, "BMSファイルが見つかりません"));
-			Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
+		BMSModel model = decode(new ChartInformation(f, lntype, null));
+		if (model == null) {
+			return null;
 		}
-		return null;
+		Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().length);
+		return model;
 	}
 	
 	public BMSModel decode(ChartInformation info) {
+		log.clear();
 		try {
 			this.lntype = info.lntype;
-			return decode(info.path, Files.readAllBytes(info.path), info.path.toString().toLowerCase().endsWith(".pms"), info.selectedRandoms);
+			final String location = info.source.location();
+			return decode(info, readAllBytes(info.source), location != null && location.toLowerCase().endsWith(".pms"), info.selectedRandoms);
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルが見つかりません"));
-			Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
+			Logger.getGlobal().severe(info.source.location() + ":BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
 		}
 		return null;
 	}
@@ -84,7 +79,11 @@ public class BMSDecoder extends ChartDecoder {
 	 * @return
 	 */
 	public BMSModel decode(byte[] data, boolean ispms, int[] random) {
-		return this.decode(null, data, ispms, random);
+		return this.decode(data, null, ispms, random);
+	}
+
+	public BMSModel decode(byte[] data, String location, boolean ispms, int[] random) {
+		return this.decode(new ChartInformation(new ByteArrayChartSource(location, data), lntype, random), data, ispms, random);
 	}
 	
 	/**
@@ -93,10 +92,11 @@ public class BMSDecoder extends ChartDecoder {
 	 * @param data
 	 * @return
 	 */
-	private BMSModel decode(Path path, byte[] data, boolean ispms, int[] selectedRandom) {
+	private BMSModel decode(ChartInformation info, byte[] data, boolean ispms, int[] selectedRandom) {
 		log.clear();
 		final long time = System.currentTimeMillis();
 		BMSModel model = new BMSModel();
+		final String location = info.source.location();
 		scrolltable.clear();
 		stoptable.clear();
 		bpmtable.clear();
@@ -117,7 +117,7 @@ public class BMSDecoder extends ChartDecoder {
 		} catch (Exception e) {
 			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
 			Logger.getGlobal()
-					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+					.severe(location + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 			e.printStackTrace();
 			return null;
 		}
@@ -154,7 +154,7 @@ public class BMSDecoder extends ChartDecoder {
 			model.setBase(36);
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
 			Logger.getGlobal()
-					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+					.severe(location + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 			e.printStackTrace();
 		}
 		
@@ -404,7 +404,7 @@ public class BMSDecoder extends ChartDecoder {
 
 			if(tl[0].getBPM() == 0) {
 				log.add(new DecodeLog(ERROR, "開始BPMが定義されていないため、BMS解析に失敗しました"));
-				Logger.getGlobal().severe(path + ":BMSファイル解析失敗: 開始BPMが定義されていません");
+				Logger.getGlobal().severe(location + ":BMSファイル解析失敗: 開始BPMが定義されていません");
 				return null;
 			}
 
@@ -450,17 +450,17 @@ public class BMSDecoder extends ChartDecoder {
 				}
 			}
 			
-			model.setChartInformation(new ChartInformation(path, lntype, selectedRandom));
-			printLog(path);
+			model.setChartInformation(new ChartInformation(info.source, lntype, selectedRandom));
+			printLog(location);
 			return model;
 		} catch (IOException e) {
 			log.add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
 			Logger.getGlobal()
-					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+					.severe(location + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 		} catch (Exception e) {
 			log.add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
 			Logger.getGlobal()
-					.severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
+					.severe(location + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
 			e.printStackTrace();
 		}
 		return null;
@@ -479,6 +479,17 @@ public class BMSDecoder extends ChartDecoder {
 			}
 		}
 		return true;
+	}
+
+	private static byte[] readAllBytes(ChartSource source) throws IOException {
+		try (InputStream input = source.openStream(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			byte[] buffer = new byte[8192];
+			int length;
+			while ((length = input.read(buffer)) != -1) {
+				output.write(buffer, 0, length);
+			}
+			return output.toByteArray();
+		}
 	}
 
 	/**

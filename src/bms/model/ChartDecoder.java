@@ -38,6 +38,10 @@ public abstract class ChartDecoder {
 	public BMSModel decode(Path path) {
 		return decode(new ChartInformation(path, lntype, null));		
 	}
+
+	public BMSModel decode(ChartSource source) {
+		return decode(new ChartInformation(source, lntype, null));
+	}
 	
 	/**
 	 * デコードログを取得する
@@ -58,7 +62,18 @@ public abstract class ChartDecoder {
 	 * @return 対応するChartDecoder。存在しない場合はnull
 	 */
 	public static ChartDecoder getDecoder(Path p) {
-		final String s = p.getFileName().toString().toLowerCase();
+		return getDecoder(p.getFileName().toString());
+	}
+
+	public static ChartDecoder getDecoder(ChartSource source) {
+		return getDecoder(source.location());
+	}
+
+	public static ChartDecoder getDecoder(String location) {
+		if(location == null) {
+			return null;
+		}
+		final String s = location.toLowerCase();
 		if (s.endsWith(".bms") || s.endsWith(".bme") || s.endsWith(".bml") || s.endsWith(".pms")) {
 			return new BMSDecoder(BMSModel.LNTYPE_LONGNOTE);
 		} else if (s.endsWith(".bmson")) {
@@ -154,11 +169,15 @@ public abstract class ChartDecoder {
 	}
 	
 	protected void printLog(Path path) {
+		printLog(path != null ? path.toString() : null);
+	}
+
+	protected void printLog(String location) {
 		log.forEach(log -> {
 			switch(log.getState()) {
-			case INFO -> Logger.getGlobal().info(path + " : " + log.getMessage());
-			case WARNING -> Logger.getGlobal().warning(path + " : " + log.getMessage());
-			case ERROR -> Logger.getGlobal().severe(path + " : " + log.getMessage());
+			case INFO -> Logger.getGlobal().info(location + " : " + log.getMessage());
+			case WARNING -> Logger.getGlobal().warning(location + " : " + log.getMessage());
+			case ERROR -> Logger.getGlobal().severe(location + " : " + log.getMessage());
 			}
 		});
 	}

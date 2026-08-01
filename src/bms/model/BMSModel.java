@@ -390,7 +390,10 @@ public class BMSModel implements Comparable<BMSModel> {
 	}
 	
 	public String getPath() {
-		return info != null && info.path != null ? info.path.toString() : null;
+		if(info == null) {
+			return null;
+		}
+		return info.source != null ? info.source.location() : (info.path != null ? info.path.toString() : null);
 	}
 	
 	public int getLntype() {
