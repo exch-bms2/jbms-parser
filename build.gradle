@@ -1,0 +1,53 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'bms.model'
+version = '0.8.9'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'com.fasterxml.jackson.core:jackson-core:latest.release'
+    api 'com.fasterxml.jackson.core:jackson-annotations:latest.release'
+    api 'com.fasterxml.jackson.core:jackson-databind:latest.release'
+}
+
+configurations.configureEach {
+    resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('jar') {
+    archiveFileName = 'jbms-parser.jar'
+    destinationDirectory = layout.projectDirectory
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+
+    manifest {
+        attributes 'Class-Path': '.'
+    }
+}
