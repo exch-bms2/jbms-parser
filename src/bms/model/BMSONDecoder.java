@@ -65,6 +65,10 @@ public class BMSONDecoder extends ChartDecoder {
 			e.printStackTrace();
 			return null;
 		}
+		if (!validate(bmson)) {
+			printLog(location);
+			return null;
+		}
 		
 		model.setTitle(bmson.info.title);
 		model.setSubTitle((bmson.info.subtitle != null ? bmson.info.subtitle : "")
@@ -131,16 +135,6 @@ public class BMSONDecoder extends ChartDecoder {
 		final TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
 		basetl.setBPM(model.getBpm());
 		tlcache.put(0, new TimeLineEntry(0.0, basetl));
-
-		if (bmson.bpm_events == null) {
-			bmson.bpm_events = new BpmEvent[0];
-		}
-		if (bmson.stop_events == null) {
-			bmson.stop_events = new StopEvent[0];
-		}
-		if (bmson.scroll_events == null) {
-			bmson.scroll_events = new ScrollEvent[0];
-		}
 
 		final double resolution = bmson.info.resolution > 0 ? bmson.info.resolution * 4 : 960;
 		final Comparator<BMSONObject> comparator = (n1,n2) -> (n1.y - n2.y);
@@ -400,7 +394,7 @@ public class BMSONDecoder extends ChartDecoder {
 			}
 			if (bmson.bga.bga_events != null) {
 				for (BNote n : bmson.bga.bga_events) {
-					getTimeLine(n.y, resolution).setBGA(idmap.get(n.id));
+					getTimeLine(n.y, resolution).setBGA(resolveBgaId(idmap, n.id));
 				}
 			}
 			if (bmson.bga.layer_events != null) {
@@ -423,7 +417,7 @@ public class BMSONDecoder extends ChartDecoder {
 						if(seqmap.containsKey(nid) ) {
 							seqs[seqindex] = seqmap.get(nid);
 						} else {
-							seqs[seqindex] = new Layer.Sequence[] {new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)};
+							seqs[seqindex] = new Layer.Sequence[] {new Layer.Sequence(0, resolveBgaId(idmap, nid)),new Layer.Sequence(500)};
 						}						
 					}
 					getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(event, seqs)});						
@@ -436,7 +430,7 @@ public class BMSONDecoder extends ChartDecoder {
 								new Layer.Sequence[][] {seqmap.get(n.id)})});						
 					} else {
 						getTimeLine(n.y, resolution).setEventlayer(new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
-								new Layer.Sequence[][] {{new Layer.Sequence(0, idmap.get(n.id)),new Layer.Sequence(500)}})});
+								new Layer.Sequence[][] {{new Layer.Sequence(0, resolveBgaId(idmap, n.id)),new Layer.Sequence(500)}})});
 					}
 				}
 			}
@@ -450,6 +444,145 @@ public class BMSONDecoder extends ChartDecoder {
 		model.setChartInformation(new ChartInformation(info.source, lntype, info.selectedRandoms));
 		printLog(location);
 		return model;
+	}
+
+	private boolean validate(Bmson bmson) {
+		if (bmson == null || bmson.info == null) {
+			return invalid("infoが定義されていません");
+		}
+		if (bmson.info.subartists == null) {
+			bmson.info.subartists = new String[0];
+		}
+		if (bmson.lines == null) {
+			bmson.lines = new BarLine[0];
+		}
+		if (bmson.bpm_events == null) {
+			bmson.bpm_events = new BpmEvent[0];
+		}
+		if (bmson.stop_events == null) {
+			bmson.stop_events = new StopEvent[0];
+		}
+		if (bmson.scroll_events == null) {
+			bmson.scroll_events = new ScrollEvent[0];
+		}
+		if (bmson.sound_channels == null) {
+			bmson.sound_channels = new SoundChannel[0];
+		}
+		if (bmson.key_channels == null) {
+			bmson.key_channels = new MineChannel[0];
+		}
+		if (bmson.mine_channels == null) {
+			bmson.mine_channels = new MineChannel[0];
+		}
+
+		for (BarLine line : bmson.lines) {
+			if (line == null || !validY(line.y)) {
+				return invalid("linesに不正な要素があります");
+			}
+		}
+		if (!validEvents(bmson.bpm_events, "bpm_events")
+				|| !validEvents(bmson.stop_events, "stop_events")
+				|| !validEvents(bmson.scroll_events, "scroll_events")) {
+			return false;
+		}
+		for (SoundChannel channel : bmson.sound_channels) {
+			if (channel == null) {
+				return invalid("sound_channelsにnull要素があります");
+			}
+			if (channel.notes == null) {
+				channel.notes = new Note[0];
+			}
+			if (!validEvents(channel.notes, "sound_channels.notes")) {
+				return false;
+			}
+			for (Note note : channel.notes) {
+				if (note.l > 0 && (long) note.y + note.l >= Integer.MAX_VALUE) {
+					return invalid("ロングノートの終端座標が範囲外です");
+				}
+			}
+		}
+		for (MineChannel channel : bmson.key_channels) {
+			if (!validMineChannel(channel, "key_channels")) {
+				return false;
+			}
+		}
+		for (MineChannel channel : bmson.mine_channels) {
+			if (!validMineChannel(channel, "mine_channels")) {
+				return false;
+			}
+		}
+
+		if (bmson.bga != null) {
+			if (bmson.bga.bga_header != null) {
+				for (BGAHeader header : bmson.bga.bga_header) {
+					if (header == null) {
+						return invalid("bga_headerにnull要素があります");
+					}
+				}
+			}
+			if (bmson.bga.bga_sequence != null) {
+				for (BGASequence sequence : bmson.bga.bga_sequence) {
+					if (sequence == null) {
+						continue;
+					}
+					if (sequence.sequence == null) {
+						return invalid("bga_sequence.sequenceがnullです");
+					}
+					for (Sequence item : sequence.sequence) {
+						if (item == null) {
+							return invalid("bga_sequence.sequenceにnull要素があります");
+						}
+					}
+				}
+			}
+			if (!validEvents(bmson.bga.bga_events, "bga_events")
+					|| !validEvents(bmson.bga.layer_events, "layer_events")
+					|| !validEvents(bmson.bga.poor_events, "poor_events")) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private boolean validMineChannel(MineChannel channel, String name) {
+		if (channel == null) {
+			return invalid(name + "にnull要素があります");
+		}
+		if (channel.notes == null) {
+			channel.notes = new bms.model.bmson.MineNote[0];
+		}
+		return validEvents(channel.notes, name + ".notes");
+	}
+
+	private boolean validEvents(BMSONObject[] events, String name) {
+		if (events == null) {
+			return true;
+		}
+		for (BMSONObject event : events) {
+			if (event == null || !validY(event.y)) {
+				return invalid(name + "に不正な要素があります");
+			}
+		}
+		return true;
+	}
+
+	private boolean validY(int y) {
+		// イベント処理では Integer.MAX_VALUE を終端の番兵として使う。
+		return y >= 0 && y < Integer.MAX_VALUE;
+	}
+
+	private boolean invalid(String message) {
+		log.add(new DecodeLog(ERROR, message));
+		return false;
+	}
+
+	private int resolveBgaId(Map<Integer, Integer> idmap, int id) {
+		Integer index = idmap.get(id);
+		if (index == null) {
+			log.add(new DecodeLog(WARNING, "未定義のBGA IDを参照しています : " + id));
+			return -1;
+		}
+		return index;
 	}
 	
 	private TimeLine getTimeLine(int y, double resolution) {

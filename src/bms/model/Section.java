@@ -87,7 +87,14 @@ public class Section {
 			case SECTION_RATE:
 				int colon_index = line.indexOf(":");
 				try {
-					rate = Double.valueOf(line.substring(colon_index + 1, line.length()));					
+					double parsedRate = Double.parseDouble(line.substring(colon_index + 1));
+					double nextSection = sectionnum + parsedRate;
+					if (Double.isFinite(parsedRate) && parsedRate > 0
+							&& Double.isFinite(nextSection) && nextSection > sectionnum) {
+						rate = parsedRate;
+					} else {
+						log.add(new DecodeLog(WARNING, "小節の拡大率が不正です : " + line));
+					}
 				} catch (NumberFormatException e) {
 					log.add(new DecodeLog(WARNING, "小節の拡大率が不正です : " + line));
 				}

@@ -132,7 +132,9 @@ public class BMSDecoder extends ChartDecoder {
 				}
 				if(line.charAt(0) == '#') {
 					if (matchesReserveWord(line, "BASE")) {
-						if (line.charAt(5) == ' ') {
+						if (line.length() == 5) {
+							log.add(new DecodeLog(WARNING, "#BASEに数字が定義されていません"));
+						} else if (line.charAt(5) == ' ') {
 							try {
 								final String arg = line.substring(6).trim();
 								int base = Integer.parseInt(arg);
