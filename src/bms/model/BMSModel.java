@@ -69,6 +69,26 @@ public class BMSModel implements Comparable<BMSModel> {
 	 * 判定ランクのタイプ
 	 */
 	private JudgeRankType judgerankType = JudgeRankType.BMS_RANK;
+	private JudgeType judgeType = new JudgeType(null, null, null);
+
+	/** Source judgment parameters. A null value means no value was retained for that format field. */
+	public record JudgeType(Integer bmsRank, Integer bmsDefexRank, Integer bmsonJudgeRank) {}
+
+	public JudgeType getJudgeType() {
+		return judgeType;
+	}
+
+	void setBmsRank(int rank) {
+		judgeType = new JudgeType(rank, judgeType.bmsDefexRank(), judgeType.bmsonJudgeRank());
+	}
+
+	void setBmsDefexRank(int rank) {
+		judgeType = new JudgeType(judgeType.bmsRank(), rank, judgeType.bmsonJudgeRank());
+	}
+
+	void setBmsonJudgeRank(Integer rank) {
+		judgeType = new JudgeType(judgeType.bmsRank(), judgeType.bmsDefexRank(), rank);
+	}
 	/**
 	 * TOTAL値
 	 */

@@ -703,6 +703,7 @@ enum CommandWord {
 		try {
 			final int rank = Integer.parseInt(arg);
 			if (rank >= 0 && rank < 5) {
+				model.setBmsRank(rank);
 				model.setJudgerank(rank);
 				model.setJudgerankType(BMSModel.JudgeRankType.BMS_RANK);
 			} else {
@@ -717,6 +718,7 @@ enum CommandWord {
 		try {
 			final int rank = Integer.parseInt(arg);
 			if (rank >= 1) {
+				model.setBmsDefexRank(rank);
 				model.setJudgerank(rank);
 				model.setJudgerankType(BMSModel.JudgeRankType.BMS_DEFEXRANK);
 			} else {

@@ -33,6 +33,23 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+def regression = sourceSets.create('regression') {
+    java.srcDirs = ['test']
+    compileClasspath += sourceSets.main.output
+    runtimeClasspath += sourceSets.main.runtimeClasspath
+}
+
+def judgeTypeTest = tasks.register('judgeTypeTest', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.named(regression.classesTaskName)
+    classpath = regression.runtimeClasspath
+    mainClass = 'bms.model.JudgeTypeTest'
+}
+
+tasks.named('check') {
+    dependsOn judgeTypeTest
+}
+
 tasks.named('jar') {
     archiveFileName = 'jbms-parser.jar'
     destinationDirectory = layout.projectDirectory

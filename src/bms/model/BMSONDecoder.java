@@ -84,6 +84,7 @@ public class BMSONDecoder extends ChartDecoder {
 		model.setSubArtist(subartist.toString());
 		model.setGenre(bmson.info.genre);
 
+		model.setBmsonJudgeRank(bmson.info.declaredJudgeRank());
 		if (bmson.info.judge_rank < 0) {
 			log.add(new DecodeLog(WARNING, "judge_rankが0以下です。judge_rank = " + bmson.info.judge_rank));
 		} else if (bmson.info.judge_rank < 5) {
